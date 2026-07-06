@@ -1,0 +1,141 @@
+name: 💖 VIBE 2026 - Auto Deploy
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      deploy_message:
+        description: 'وصف النشر'
+        required: false
+        default: '💖 VIBE Auto Deploy'
+
+permissions:
+  contents: write
+
+jobs:
+  generate-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 1: سحب المستودع
+      # ═══════════════════════════════════════
+      - name: 📥 سحب المستودع
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 2: إعداد Python
+      # ═══════════════════════════════════════
+      - name: 🐍 إعداد Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 3: تشغيل المولد
+      # ═══════════════════════════════════════
+      - name: 🔧 تشغيل scraper.py لتوليد الملفات
+        run: |
+          echo "💖 بدء توليد VIBE..."
+          python scraper.py
+          echo "✅ تم توليد جميع الملفات في مجلد gtheb/"
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 4: نسخ الملفات من gtheb للمجلد الرئيسي
+      # ═══════════════════════════════════════
+      - name: 📁 نسخ الملفات للمجلد الرئيسي
+        run: |
+          echo "📁 جاري نسخ الملفات من gtheb/ ..."
+          cp -r gtheb/* .
+          echo "✅ تم نسخ جميع الملفات"
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 5: عرض الملفات المنشأة
+      # ═══════════════════════════════════════
+      - name: 📋 عرض الملفات المنشأة
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════╗"
+          echo "║  💖 VIBE - الملفات المنشأة  ║"
+          echo "╚══════════════════════════════════════╝"
+          echo ""
+          echo "📁 الملفات:"
+          ls -la *.html *.js *.css 2>/dev/null || echo "  ⚠️ لا توجد ملفات بعد"
+          echo ""
+          echo "📊 إحصائيات:"
+          echo "  • HTML files: $(ls -1 *.html 2>/dev/null | wc -l)"
+          echo "  • CSS files: $(ls -1 *.css 2>/dev/null | wc -l)"
+          echo "  • JS files: $(ls -1 *.js 2>/dev/null | wc -l)"
+          echo "  • Total lines: $(cat *.html *.js *.css 2>/dev/null | wc -l)"
+          echo ""
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 6: نشر الملفات
+      # ═══════════════════════════════════════
+      - name: 🚀 رفع الملفات إلى GitHub
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "💖 VIBE 2026 - Auto Deploy [skip ci]"
+          commit_author: "VIBE Bot 🤖 <actions@github.com>"
+          commit_user_email: "actions@github.com"
+          commit_user_name: "VIBE Bot"
+          
+          # رفع جميع ملفات HTML و CSS و JS
+          file_pattern: '*.html *.js *.css'
+          
+          # خيارات إضافية
+          push_options: '--force'
+          skip_dirty_check: false
+          skip_fetch: false
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 7: تأكيد النشر
+      # ═══════════════════════════════════════
+      - name: ✅ تأكيد النشر الناجح
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════╗"
+          echo "║                                            ║"
+          echo "║  💖  VIBE 2026                             ║"
+          echo "║  ✅  تم النشر بنجاح!                       ║"
+          echo "║                                            ║"
+          echo "║  📂  الملفات المنشورة (10 ملفات):           ║"
+          echo "║     • firebase-config.js                   ║"
+          echo "║     • auth.html                            ║"
+          echo "║     • index.html                           ║"
+          echo "║     • style.css                            ║"
+          echo "║     • script.js                            ║"
+          echo "║     • profile.js                           ║"
+          echo "║     • chat.js                              ║"
+          echo "║     • posts.js                             ║"
+          echo "║     • admin.js                             ║"
+          echo "║     • extras.js                            ║"
+          echo "║                                            ║"
+          echo "║  🎀  Premium Pink Glass Design             ║"
+          echo "║  💎  Verified Badge System                 ║"
+          echo "║                                            ║"
+          echo "║  🔗 رابط المستودع:                         ║"
+          echo "║     ${{ github.server_url }}/${{ github.repository }}"
+          echo "║                                            ║"
+          echo "╚════════════════════════════════════════════╝"
+          echo ""
+
+  # ═══════════════════════════════════════════════
+  # 💖 Job 2: إرسال إشعار (اختياري)
+  # ═══════════════════════════════════════════════
+  notify:
+    needs: generate-and-deploy
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: 📊 ملخص النشر
+        run: |
+          if [ "${{ needs.generate-and-deploy.result }}" == "success" ]; then
+            echo "🟢 النشر نجح! 💖"
+          else
+            echo "🔴 النشر فشل!"
+          fi
