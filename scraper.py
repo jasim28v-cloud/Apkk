@@ -3,7 +3,7 @@
 scraper.py - Project Generator
 ينشئ هيكل مشروع Android كامل داخل مجلد gtheb
 لتطبيق SecureVault بواجهة محادثة تشبه واتساب
-مع GitHub Actions بسيط لبناء APK فقط
+مع GitHub Actions و Service Worker
 """
 
 import os
@@ -31,6 +31,8 @@ def create_project_structure():
         f"{base_path}/app/src/main/res/mipmap-xxxhdpi",
         f"{base_path}/gradle/wrapper",
         f"{base_path}/.github/workflows",
+        f"{base_path}/public",
+        f"{base_path}/public/icons",
     ]
     
     for d in dirs:
@@ -146,7 +148,6 @@ dependencies {
         android:requestLegacyExternalStorage="true"
         tools:targetApi="31">
         
-        <!-- شاشة القفل -->
         <activity
             android:name=".ui.LockScreenActivity"
             android:exported="true"
@@ -157,12 +158,10 @@ dependencies {
             </intent-filter>
         </activity>
         
-        <!-- واجهة المحادثة الرئيسية -->
         <activity
             android:name=".ui.ChatActivity"
             android:exported="false" />
             
-        <!-- عارض الوسائط -->
         <activity
             android:name=".ui.MediaViewerActivity"
             android:exported="false"
@@ -611,7 +610,7 @@ public class ChatActivity extends AppCompatActivity {
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
         
-        addMessage("bot", "مرحباً! هذه خزنتك الآمنة \\uD83D\\uDCF1\\nيمكنك إرسال الصور والفيديوهات لتشفيرها وحمايتها\\nالرمز: 1234");
+        addMessage("bot", "مرحباً! هذه خزنتك الآمنة 📱\\nيمكنك إرسال الصور والفيديوهات لتشفيرها وحمايتها\\nالرمز: 1234");
         
         sendButton.setOnClickListener(v -> sendMessage());
         
@@ -633,9 +632,9 @@ public class ChatActivity extends AppCompatActivity {
             messageInput.setText("");
             
             if (text.contains("مرحبا") || text.contains("هلا")) {
-                addMessage("bot", "أهلاً بك! \\uD83D\\uDCF1 أرسل لي الصور والفيديوهات لحمايتها");
+                addMessage("bot", "أهلاً بك! 📱 أرسل لي الصور والفيديوهات لحمايتها");
             } else if (text.contains("شكرا")) {
-                addMessage("bot", "عفواً! \\uD83D\\uDE0A ملفاتك بأمان");
+                addMessage("bot", "عفواً! 😊 ملفاتك بأمان");
             }
         }
     }
@@ -689,9 +688,9 @@ public class ChatActivity extends AppCompatActivity {
                 tempFile.delete();
                 
                 boolean isVideo = FileUtils.isVideo(fileName);
-                String icon = isVideo ? "\\uD83C\\uDFAC" : "\\uD83D\\uDDBC";
+                String icon = isVideo ? "🎬" : "🖼️";
                 addMessage("user", icon + " " + fileName + "\\nتم التشفير والحماية ✅");
-                addMessage("bot", "تم حماية الملف بنجاح! \\uD83D\\uDD12\\nلا يمكن لأحد رؤيته الآن");
+                addMessage("bot", "تم حماية الملف بنجاح! 🔒\\nلا يمكن لأحد رؤيته الآن");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -713,16 +712,16 @@ public class ChatActivity extends AppCompatActivity {
     private void loadVaultFiles() {
         List<VaultFile> files = dbHelper.getAllFiles();
         messages.clear();
-        addMessage("bot", "\\uD83D\\uDCC2 الملفات المحمية في خزنتك:");
+        addMessage("bot", "📂 الملفات المحمية في خزنتك:");
         
         for (VaultFile file : files) {
-            String icon = file.isVideo() ? "\\uD83C\\uDFAC" : "\\uD83D\\uDDBC";
+            String icon = file.isVideo() ? "🎬" : "🖼️";
             addMessage("user", icon + " " + file.getOriginalName() + 
                        "\\nالحجم: " + formatSize(file.getSize()));
         }
         
         if (files.isEmpty()) {
-            addMessage("bot", "لا توجد ملفات محمية بعد \\uD83D\\uDced\\nأرسل ملفاً للبدء");
+            addMessage("bot", "لا توجد ملفات محمية بعد 📭\\nأرسل ملفاً للبدء");
         }
     }
 
@@ -1146,9 +1145,9 @@ public class MediaViewerActivity extends AppCompatActivity {
     
     print("[+] Resource files created")
     
-    # ========== GITHUB ACTIONS - بسيط: بس build-apk.yml ==========
+    # ========== GITHUB ACTIONS - main.yml ==========
     
-    build_apk_yml = """name: Build APK
+    main_yml = """name: Build APK
 
 on:
   push:
@@ -1184,10 +1183,224 @@ jobs:
         name: SecureVault-Debug
         path: app/build/outputs/apk/debug/app-debug.apk"""
     
-    with open(f"{base_path}/.github/workflows/build-apk.yml", "w") as f:
-        f.write(build_apk_yml)
+    with open(f"{base_path}/.github/workflows/main.yml", "w") as f:
+        f.write(main_yml)
     
-    print("[+] GitHub Actions: build-apk.yml created")
+    print("[+] GitHub Actions main.yml created")
+    
+    # ========== PWA FILES ==========
+    
+    # sw.js
+    sw_js = """// sw.js - SecureVault Service Worker
+const CACHE_NAME = 'securevault-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/offline.html'
+];
+
+self.addEventListener('install', (event) => {
+  console.log('[SW] Install');
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log('[SW] Caching app shell');
+      return cache.addAll(urlsToCache);
+    })
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Activate');
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('[SW] Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      if (response) {
+        return response;
+      }
+      const fetchRequest = event.request.clone();
+      return fetch(fetchRequest).then((response) => {
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
+        return response;
+      }).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('/offline.html');
+        }
+      });
+    })
+  );
+});"""
+    
+    with open(f"{base_path}/public/sw.js", "w") as f:
+        f.write(sw_js)
+    
+    # manifest.json
+    manifest_json = """{
+  "name": "SecureVault - الخزنة الآمنة",
+  "short_name": "SecureVault",
+  "description": "تطبيق لتشفير وحماية الصور والفيديوهات بواجهة محادثة",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1B5E20",
+  "theme_color": "#075E54",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}"""
+    
+    with open(f"{base_path}/public/manifest.json", "w") as f:
+        f.write(manifest_json)
+    
+    # index.html
+    index_html = """<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#075E54">
+    <title>SecureVault - الخزنة الآمنة</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1B5E20, #2E7D32);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container { padding: 40px; }
+        .lock { font-size: 80px; margin-bottom: 20px; }
+        h1 { font-size: 32px; margin-bottom: 10px; }
+        p { font-size: 18px; opacity: 0.9; margin-bottom: 10px; }
+        .status { 
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="lock">🔒</div>
+        <h1>SecureVault</h1>
+        <p>الخزنة الآمنة لتشفير وحماية ملفاتك</p>
+        <div class="status" id="status">⏳ جاري التحميل...</div>
+    </div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('SW registered:', registration);
+                    document.getElementById('status').textContent = '✅ التطبيق جاهز للعمل بدون إنترنت';
+                })
+                .catch(err => {
+                    console.error('SW registration failed:', err);
+                    document.getElementById('status').textContent = '⚠️ وضع عدم الاتصال غير متاح';
+                });
+            });
+        }
+    </script>
+</body>
+</html>"""
+    
+    with open(f"{base_path}/public/index.html", "w") as f:
+        f.write(index_html)
+    
+    # offline.html
+    offline_html = """<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>غير متصل - SecureVault</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1B5E20, #2E7D32);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .container {
+            padding: 40px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+        }
+        .icon { font-size: 80px; margin-bottom: 20px; }
+        h1 { font-size: 28px; margin-bottom: 10px; }
+        p { font-size: 16px; opacity: 0.9; margin-bottom: 20px; }
+        button {
+            padding: 12px 30px;
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #20BD5A;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📡</div>
+        <h1>أنت غير متصل بالإنترنت</h1>
+        <p>يرجى الاتصال بالشبكة للمتابعة</p>
+        <button onclick="window.location.reload()">🔄 إعادة المحاولة</button>
+    </div>
+</body>
+</html>"""
+    
+    with open(f"{base_path}/public/offline.html", "w") as f:
+        f.write(offline_html)
+    
+    print("[+] PWA files created (sw.js, manifest.json, index.html, offline.html)")
     
     # ========== GRADLE WRAPPER ==========
     
@@ -1235,16 +1448,12 @@ if defined JAVA_HOME goto findJavaFromJavaHome
 set JAVA_EXE=java.exe
 %JAVA_EXE% -version >NUL 2>&1
 if %ERRORLEVEL% equ 0 goto execute
-echo ERROR: JAVA_HOME is not set
-goto fail
 :findJavaFromJavaHome
 set JAVA_HOME=%JAVA_HOME:"=%
 set JAVA_EXE=%JAVA_HOME%/bin/java.exe
-if exist "%JAVA_EXE%" goto execute
 :execute
 set CLASSPATH=%APP_HOME%\\gradle\\wrapper\\gradle-wrapper.jar
 "%JAVA_EXE%" %DEFAULT_JVM_OPTS% -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
-:end
 """
     
     with open(f"{base_path}/gradlew.bat", "w") as f:
@@ -1256,18 +1465,12 @@ set CLASSPATH=%APP_HOME%\\gradle\\wrapper\\gradle-wrapper.jar
     print("\n" + "="*60)
     print("[✓] تم إنشاء المشروع بنجاح في مجلد gtheb/")
     print("="*60)
-    print("\nبنية المشروع:")
-    print("  📁 gtheb/")
-    print("  ├── 📁 app/ (تطبيق Android)")
-    print("  ├── 📁 .github/workflows/")
-    print("  │   └── build-apk.yml  ← يصنع APK فقط ✅")
-    print("  ├── build.gradle")
-    print("  └── gradlew")
-    print("\nماذا يحدث عند رفع المشروع لـ GitHub؟")
-    print("  ✅ يشتغل GitHub Actions تلقائياً")
-    print("  ✅ يبني الـ APK")
-    print("  ✅ يرفعه كـ Artifact جاهز للتحميل")
-    print("  ✅ بسيط - مباشر - بدون تعقيد")
+    print("\nالمشروع يحتوي على:")
+    print("  ✅ تطبيق Android كامل (SecureVault)")
+    print("  ✅ GitHub Actions (main.yml)")
+    print("  ✅ Service Worker (sw.js)")
+    print("  ✅ PWA Manifest (manifest.json)")
+    print("  ✅ صفحة Offline")
     print("\nالرمز السري: 1234")
     print("="*60)
 
