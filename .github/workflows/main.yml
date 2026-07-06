@@ -1,77 +1,158 @@
-name: 💖 Build File Vault APK
+name: 💖 Auto Deploy - Joker Workflow
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
+    inputs:
+      deploy_message:
+        description: 'وصف النشر'
+        required: false
+        default: '💖 Auto Deploy'
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  generate-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 Checkout Repository
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 1: سحب المستودع
+      # ═══════════════════════════════════════
+      - name: 📥 سحب المستودع
         uses: actions/checkout@v4
-
-      - name: 🐍 Setup Python
+        with:
+          fetch-depth: 0
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 2: إعداد Python
+      # ═══════════════════════════════════════
+      - name: 🐍 إعداد Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-
-      - name: 📝 Generate Project Files
+          python-version: '3.12'
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 3: اكتشاف مجلد الإخراج
+      # ═══════════════════════════════════════
+      - name: 🔍 اكتشاف مجلد الإخراج من scraper.py
+        id: detect
         run: |
+          # استخراج اسم المجلد من scraper.py
+          FOLDER=$(grep -oP "(?:ROOT_DIR|PROJECT_NAME)\s*=\s*['\"]?\K\w+" scraper.py | head -1)
+          if [ -z "$FOLDER" ]; then
+            # اسماء شائعة
+            for f in gtheb FileVault VIBE output build dist; do
+              if grep -q "$f" scraper.py 2>/dev/null; then
+                FOLDER="$f"
+                break
+              fi
+            done
+          fi
+          echo "folder=${FOLDER:-gtheb}" >> $GITHUB_OUTPUT
+          echo "📁 مجلد الإخراج: ${FOLDER:-gtheb}"
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 4: تشغيل المولد
+      # ═══════════════════════════════════════
+      - name: 🔧 تشغيل scraper.py
+        run: |
+          echo "💖 بدء توليد الملفات..."
           python scraper.py
-          echo "=== Files generated ==="
-          find . -name "*.gradle" -o -name "*.java" -o -name "*.xml" | head -20
-
-      - name: 📂 Move Files to Root
+          echo "✅ تم توليد الملفات"
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 5: نسخ الملفات
+      # ═══════════════════════════════════════
+      - name: 📁 نسخ الملفات للمجلد الرئيسي
         run: |
-          if [ -d "FileVault" ]; then
-            echo "Moving from FileVault/ to root..."
-            cp -r FileVault/* . 2>/dev/null || true
-            cp -r FileVault/.[!.]* . 2>/dev/null || true
-            rm -rf FileVault
-          fi
-          echo "=== Root files ==="
-          ls -la
-          echo "=== Check gradlew ==="
-          test -f gradlew && echo "gradlew EXISTS" || echo "gradlew MISSING"
-
-      - name: ☕ Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: 📱 Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          build-tools: 34.0.0
-
-      - name: 🔧 Make gradlew Executable
-        run: |
-          if [ -f "gradlew" ]; then
-            chmod +x gradlew
+          FOLDER="${{ steps.detect.outputs.folder }}"
+          echo "📁 جاري نسخ الملفات من $FOLDER/ ..."
+          
+          if [ -d "$FOLDER" ]; then
+            cp -r $FOLDER/* . 2>/dev/null || true
+            cp -r $FOLDER/.[!.]* . 2>/dev/null || true
+            rm -rf $FOLDER
+            echo "✅ تم النسخ من $FOLDER/"
+          elif [ -d "gtheb" ]; then
+            cp -r gtheb/* . 2>/dev/null || true
+            cp -r gtheb/.[!.]* . 2>/dev/null || true
+            rm -rf gtheb
+            echo "✅ تم النسخ من gtheb/"
           else
-            echo "ERROR: gradlew not found!"
-            exit 1
+            echo "⚠️ لم يتم العثور على مجلد إخراج"
+            echo "📋 الملفات الحالية:"
+            ls -la
           fi
-
-      - name: 🏗️ Build Debug APK
-        run: ./gradlew assembleDebug
-
-      - name: 🏗️ Build Release APK
-        run: ./gradlew assembleRelease
-
-      - name: 📦 Upload Debug APK
-        uses: actions/upload-artifact@v4
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 6: عرض الإحصائيات
+      # ═══════════════════════════════════════
+      - name: 📊 عرض إحصائيات الملفات
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════╗"
+          echo "║  💖 الملفات المنشأة  ║"
+          echo "╚══════════════════════════════════════╝"
+          echo ""
+          echo "📁 جميع الملفات:"
+          ls -la
+          echo ""
+          echo "📊 إحصائيات:"
+          echo "  • HTML: $(find . -maxdepth 1 -name '*.html' | wc -l)"
+          echo "  • CSS: $(find . -maxdepth 1 -name '*.css' | wc -l)"
+          echo "  • JS: $(find . -maxdepth 1 -name '*.js' | wc -l)"
+          echo "  • Java: $(find . -name '*.java' | wc -l)"
+          echo "  • XML: $(find . -name '*.xml' | wc -l)"
+          echo "  • Gradle: $(find . -name '*.gradle' | wc -l)"
+          echo "  • Total files: $(find . -type f | wc -l)"
+          echo "  • Total lines: $(find . -type f -exec cat {} + 2>/dev/null | wc -l)"
+          echo ""
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 7: رفع الملفات
+      # ═══════════════════════════════════════
+      - name: 🚀 رفع الملفات إلى GitHub
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          name: FileVault-Debug-APK
-          path: app/build/outputs/apk/debug/*.apk
+          commit_message: "💖 Auto Deploy - ${{ github.event.inputs.deploy_message || 'Generated files' }} [skip ci]"
+          commit_author: "Bot 🤖 <actions@github.com>"
+          commit_user_email: "actions@github.com"
+          commit_user_name: "GitHub Actions Bot"
+          file_pattern: '*'
+          push_options: '--force'
+      
+      # ═══════════════════════════════════════
+      # 💖 الخطوة 8: تأكيد النشر
+      # ═══════════════════════════════════════
+      - name: ✅ تأكيد النشر
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════╗"
+          echo "║                                            ║"
+          echo "║  💖  Auto Deploy Complete                  ║"
+          echo "║  ✅  تم النشر بنجاح!                       ║"
+          echo "║                                            ║"
+          echo "║  🔗 ${{ github.server_url }}/${{ github.repository }}"
+          echo "║                                            ║"
+          echo "╚════════════════════════════════════════════╝"
+          echo ""
 
-      - name: 📦 Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: FileVault-Release-APK
-          path: app/build/outputs/apk/release/*.apk
+  # ═══════════════════════════════════════════════
+  # 💖 إشعار
+  # ═══════════════════════════════════════════════
+  notify:
+    needs: generate-and-deploy
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: 📊 ملخص
+        run: |
+          if [ "${{ needs.generate-and-deploy.result }}" == "success" ]; then
+            echo "🟢 النشر نجح! 💖"
+          else
+            echo "🔴 النشر فشل!"
+          fi
