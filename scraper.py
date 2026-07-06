@@ -2,22 +2,20 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                            ║
-║  💖  FILE VAULT - Pink Rose APK Builder  💖              ║
-║     WhatsApp UI + AES Encryption + GitHub Actions           ║
-║     WITH GRADLE WRAPPER (READY TO BUILD)                    ║
+║  💖  FILE VAULT - Pink Rose Secret File Manager  💖       ║
+║     WhatsApp-Style Chat UI                                 ║
+║     AES-256 Encryption for External Storage                ║
+║     Password: 1234                                         ║
+║     Files appear CORRUPTED outside the app                 ║
 ║                                                            ║
-║  🔐  Password: 1234                                       ║
-║  🎨  Theme: Pink Rose Glass                                ║
-║  📁  File Manager + Encrypt/Decrypt                        ║
+║  🔥  Built for GitHub Actions APK Generation               ║
 ║                                                            ║
 ╚══════════════════════════════════════════════════════════════╝
 """
 
 import os
 import json
-import zipfile
 import urllib.request
-import stat
 
 # ═══════════════════════════════════════════════════════════
 # 💖 CONFIGURATION
@@ -26,12 +24,10 @@ import stat
 PROJECT_NAME = "FileVault"
 PACKAGE_NAME = "com.zhare.filevault"
 APP_PASSWORD = "1234"
-GRADLE_VERSION = "8.2"
-GRADLE_DIST_URL = f"https://services.gradle.org/distributions/gradle-{GRADLE_VERSION}-bin.zip"
+ROOT_DIR = os.path.join(os.getcwd(), PROJECT_NAME)
 
 TOTAL_FILES = 0
 TOTAL_LINES = 0
-ROOT_DIR = os.path.join(os.getcwd(), PROJECT_NAME)
 
 # ═══════════════════════════════════════════════════════════
 # 💖 UTILITIES
@@ -48,204 +44,76 @@ def write_file(filepath, content):
     TOTAL_LINES += lines
     print(f"  ✅ {filepath} ({lines} lines)")
 
-def write_binary(filepath, content):
-    global TOTAL_FILES
-    full_path = os.path.join(ROOT_DIR, filepath)
-    os.makedirs(os.path.dirname(full_path), exist_ok=True)
-    with open(full_path, 'wb') as f:
-        f.write(content)
-    TOTAL_FILES += 1
-    print(f"  ✅ {filepath} (binary)")
-
 def section(title):
     print(f"\n{'='*60}")
     print(f"  💖 {title}")
     print(f"{'='*60}")
 
 # ═══════════════════════════════════════════════════════════
-# 💖 DOWNLOAD GRADLE WRAPPER
-# ═══════════════════════════════════════════════════════════
-
-def download_gradle_wrapper():
-    section("DOWNLOADING GRADLE WRAPPER")
-    
-    # gradlew (shell script)
-    gradlew_content = """#!/bin/sh
-# Gradle wrapper script
-##############################################################################
-##  Gradle start up script for UN*X
-##############################################################################
-# Attempt to set APP_HOME
-PRG="$0"
-while [ -h "$PRG" ]; do
-    ls=`ls -ld "$PRG"`
-    link=`expr "$ls" : '.*-> \\(.*\\)$'`
-    if expr "$link" : '/.*' > /dev/null; then
-        PRG="$link"
-    else
-        PRG=`dirname "$PRG"`"/$link"
-    fi
-done
-SAVED="`pwd`"
-cd "`dirname \"$PRG\"`/" >/dev/null
-APP_HOME="`pwd -P`"
-cd "$SAVED" >/dev/null
-
-APP_NAME="Gradle"
-APP_BASE_NAME=`basename "$0"`
-
-DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
-
-MAX_FD="maximum"
-
-warn () {
-    echo "$*"
-}
-
-die () {
-    echo
-    echo "$*"
-    echo
-    exit 1
-}
-
-OS_NAME="`uname`"
-case "$OS_NAME" in
-    CYGWIN* | MINGW* | MSYS* )
-        SEPARATOR=";"
-        ;;
-    *)
-        SEPARATOR=":"
-        ;;
-esac
-
-CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
-
-if [ ! -f "$CLASSPATH" ]; then
-    die "ERROR: Gradle wrapper JAR not found: $CLASSPATH"
-fi
-
-GRADLE_OPTS="${GRADLE_OPTS} -Dorg.gradle.appname=${APP_BASE_NAME}"
-
-exec java $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS \\
-    -classpath "$CLASSPATH" \\
-    org.gradle.wrapper.GradleWrapperMain "$@"
-"""
-    write_file("gradlew", gradlew_content)
-    os.chmod(os.path.join(ROOT_DIR, "gradlew"), 0o755)
-
-    # gradlew.bat (Windows)
-    gradlew_bat = """@rem Gradle wrapper script for Windows
-@if "%DEBUG%"=="" @echo off
-@rem Set local scope for the variables with windows NT shell
-if "%OS%"=="Windows_NT" setlocal
-set DIRNAME=%~dp0
-if "%DIRNAME%"=="" set DIRNAME=.
-@rem This is normally unused
-set APP_BASE_NAME=%~n0
-set APP_HOME=%DIRNAME%
-set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
-set CLASSPATH=%APP_HOME%\\gradle\\wrapper\\gradle-wrapper.jar
-@rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
-:end
-@rem End local scope for the variables with windows NT shell
-if "%OS%"=="Windows_NT" endlocal
-:omega
-"""
-    write_file("gradlew.bat", gradlew_bat)
-
-    # Download gradle-wrapper.jar
-    wrapper_jar_url = "https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar"
-    print(f"  📥 Downloading gradle-wrapper.jar...")
-    try:
-        urllib.request.urlretrieve(wrapper_jar_url, os.path.join(ROOT_DIR, "gradle/wrapper/gradle-wrapper.jar"))
-        print(f"  ✅ gradle/wrapper/gradle-wrapper.jar")
-        TOTAL_FILES += 1
-    except:
-        print(f"  ⚠️ Could not download gradle-wrapper.jar, creating placeholder")
-        write_binary("gradle/wrapper/gradle-wrapper.jar", b'placeholder')
-
-    # gradle-wrapper.properties
-    write_file("gradle/wrapper/gradle-wrapper.properties", f"""distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-distributionUrl=https\\://services.gradle.org/distributions/gradle-{GRADLE_VERSION}-bin.zip
-networkTimeout=10000
-validateDistributionUrl=true
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
-""")
-
-# ═══════════════════════════════════════════════════════════
-# 💖 BUILD PROJECT FILES
+# 💖 BUILD ALL
 # ═══════════════════════════════════════════════════════════
 
 def build_all():
-    # Download Gradle Wrapper first
-    download_gradle_wrapper()
-
     section("ROOT BUILD FILES")
 
-    # Root build.gradle
-    write_file("build.gradle", """buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.2.0'
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-
-task clean(type: Delete) {
-    delete rootProject.buildDir
-}
-""")
-
-    # settings.gradle
     write_file("settings.gradle", f"""rootProject.name = "{PROJECT_NAME}"
 include ':app'
 """)
 
-    # gradle.properties
+    write_file("build.gradle", """buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
+}
+allprojects { repositories { google(); mavenCentral() } }
+""")
+
     write_file("gradle.properties", """org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
 android.useAndroidX=true
 android.nonTransitiveRClass=true
-android.enableJetifier=true
 """)
 
-    # .gitignore
     write_file(".gitignore", """*.iml
 .gradle
-/local.properties
-/.idea
-.DS_Store
+.idea
 /build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
-/app/build
-/app/release
 *.apk
-*.aab
 *.jks
-*.keystore
 """)
 
-    section("APP BUILD FILES")
+    # Gradle wrapper
+    write_file("gradlew", """#!/bin/sh
+APP_HOME="`pwd -P`"
+CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+exec java -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+""")
+    os.chmod(os.path.join(ROOT_DIR, "gradlew"), 0o755)
 
-    # App build.gradle
-    write_file("app/build.gradle", f"""plugins {{
-    id 'com.android.application'
-}}
+    write_file("gradlew.bat", """@echo off
+set CLASSPATH=%~dp0\\gradle\\wrapper\\gradle-wrapper.jar
+java -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
+""")
+
+    write_file("gradle/wrapper/gradle-wrapper.properties", """distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\\://services.gradle.org/distributions/gradle-8.2-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+""")
+
+    print("  📥 Downloading gradle-wrapper.jar...")
+    try:
+        urllib.request.urlretrieve(
+            "https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar",
+            os.path.join(ROOT_DIR, "gradle/wrapper/gradle-wrapper.jar")
+        )
+        TOTAL_FILES += 1
+        print("  ✅ gradle-wrapper.jar downloaded")
+    except Exception as e:
+        print(f"  ⚠️ Could not download jar: {e}")
+
+    section("APP BUILD FILE")
+
+    write_file("app/build.gradle", f"""plugins {{ id 'com.android.application' }}
 
 android {{
     namespace '{PACKAGE_NAME}'
@@ -255,37 +123,21 @@ android {{
         applicationId '{PACKAGE_NAME}'
         minSdk 24
         targetSdk 34
-        versionCode {{{{ github.run_number || 1 }}}}
-        versionName "1.0.{ {{{ github.run_number || 1 }}} }"
-        
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        versionCode 1
+        versionName "1.0.0"
     }}
 
     buildTypes {{
-        debug {{
-            applicationIdSuffix ".debug"
-            versionNameSuffix "-debug"
-            debuggable true
-        }}
+        debug {{ debuggable true }}
         release {{
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }}
     }}
 
     compileOptions {{
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
-    }}
-
-    applicationVariants.all {{ variant ->
-        variant.outputs.all {{ output ->
-            def appName = "{PROJECT_NAME}"
-            def buildType = variant.buildType.name
-            def versionName = variant.versionName
-            outputFileName = "${{appName}}_${{versionName}}_${{buildType}}.apk"
-        }}
     }}
 }}
 
@@ -296,16 +148,21 @@ dependencies {{
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.documentfile:documentfile:1.0.1'
-    implementation 'com.google.code.gson:gson:2.10.1'
-    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 }}
 """)
 
-    # AndroidManifest.xml
-    write_file("app/src/main/AndroidManifest.xml", f"""<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    write_file("app/proguard-rules.pro", """-keep class com.zhare.filevault.** { *; }
+-keep class javax.crypto.** { *; }
+-keep class java.security.** { *; }
+""")
 
-    <!-- Permissions -->
+    section("ANDROID MANIFEST")
+
+    write_file("app/src/main/AndroidManifest.xml", f"""<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- External Storage Permissions -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
@@ -321,117 +178,106 @@ dependencies {{
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FileVault"
-        android:requestLegacyExternalStorage="true">
+        android:requestLegacyExternalStorage="true"
+        tools:targetApi="34">
 
-        <!-- Lock Screen (Launcher) -->
+        <!-- Lock Screen (LAUNCHER) -->
         <activity
             android:name=".ui.LockScreenActivity"
             android:exported="true"
-            android:theme="@style/Theme.FileVault"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.FileVault">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- Main Activity -->
+        <!-- Chat Screen (WhatsApp-Style) -->
         <activity
-            android:name=".ui.MainActivity"
-            android:theme="@style/Theme.FileVault"
-            android:screenOrientation="portrait" />
+            android:name=".ui.ChatScreenActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.FileVault" />
 
-        <!-- File Viewer -->
+        <!-- File Manager Screen -->
         <activity
-            android:name=".ui.FileViewerActivity"
-            android:theme="@style/Theme.FileVault"
-            android:screenOrientation="portrait" />
+            android:name=".ui.FileManagerActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.FileVault" />
 
     </application>
 </manifest>
 """)
 
-    # ProGuard
-    write_file("app/proguard-rules.pro", """# File Vault ProGuard Rules
--keep class com.zhare.filevault.** { *; }
--keep class javax.crypto.** { *; }
--keep class java.security.** { *; }
--keepclassmembers class * {
-    native <methods>;
-}
--dontwarn javax.annotation.**
--dontwarn okhttp3.**
--dontwarn okio.**
-""")
+    section("JAVA - CRYPTO")
 
-    section("JAVA SOURCE FILES")
-
-    # AESHelper.java
     write_file("app/src/main/java/com/zhare/filevault/crypto/AESHelper.java", f"""package com.zhare.filevault.crypto;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.util.Base64;
 
 /**
- * 💖 AES-256 Encryption Helper
- * Uses password for key derivation
+ * 💖 AES-256 Encryption/Decryption
+ * Uses password-based key derivation (SHA-256)
+ * Files encrypted with this CANNOT be opened outside the app
  */
 public class AESHelper {{
+
     private static final String ALGORITHM = "AES";
     private static final String TRANSFORMATION = "AES/ECB/PKCS5Padding";
-    private static final String SECRET_KEY = "{APP_PASSWORD}";
+    private static final String SECRET = "{APP_PASSWORD}";
 
     private static SecretKeySpec getSecretKey() throws Exception {{
         MessageDigest sha = MessageDigest.getInstance("SHA-256");
-        byte[] key = sha.digest(SECRET_KEY.getBytes("UTF-8"));
+        byte[] key = sha.digest(SECRET.getBytes("UTF-8"));
         return new SecretKeySpec(key, ALGORITHM);
     }}
 
+    /**
+     * Encrypt byte array
+     */
     public static byte[] encrypt(byte[] data) throws Exception {{
         Cipher cipher = Cipher.getInstance(TRANSFORMATION);
         cipher.init(Cipher.ENCRYPT_MODE, getSecretKey());
         return cipher.doFinal(data);
     }}
 
+    /**
+     * Decrypt byte array
+     */
     public static byte[] decrypt(byte[] data) throws Exception {{
         Cipher cipher = Cipher.getInstance(TRANSFORMATION);
         cipher.init(Cipher.DECRYPT_MODE, getSecretKey());
         return cipher.doFinal(data);
     }}
 
+    /**
+     * Encrypt file data (returns corrupted-looking bytes)
+     */
     public static byte[] encryptFile(byte[] fileData) throws Exception {{
         return encrypt(fileData);
     }}
 
-    public static byte[] decryptFile(byte[] fileData) throws Exception {{
-        return decrypt(fileData);
+    /**
+     * Decrypt file data (returns original bytes)
+     */
+    public static byte[] decryptFile(byte[] encryptedData) throws Exception {{
+        return decrypt(encryptedData);
     }}
 
-    public static String encryptToBase64(String text) {{
-        try {{
-            byte[] encrypted = encrypt(text.getBytes("UTF-8"));
-            return Base64.getEncoder().encodeToString(encrypted);
-        }} catch (Exception e) {{
-            return null;
-        }}
-    }}
-
-    public static String decryptFromBase64(String encryptedText) {{
-        try {{
-            byte[] decoded = Base64.getDecoder().decode(encryptedText);
-            byte[] decrypted = decrypt(decoded);
-            return new String(decrypted, "UTF-8");
-        }} catch (Exception e) {{
-            return null;
-        }}
+    /**
+     * Quick check if password is correct
+     */
+    public static boolean verifyPassword(String password) {{
+        return SECRET.equals(password);
     }}
 }}
 """)
 
-    # FileItem.java
+    section("JAVA - MODELS")
+
     write_file("app/src/main/java/com/zhare/filevault/models/FileItem.java", """package com.zhare.filevault.models;
 
 import java.io.File;
@@ -440,42 +286,34 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * 💖 File Model for display in list
+ * 💖 File Model
  */
 public class FileItem {
-    private String name;
-    private String path;
-    private long size;
-    private boolean isDirectory;
-    private boolean isEncrypted;
-    private boolean isHidden;
-    private String mimeType;
-    private long lastModified;
+    private String name, path, mimeType;
+    private long size, lastModified;
+    private boolean isDirectory, isEncrypted;
 
     public FileItem(File file) {
         this.name = file.getName();
         this.path = file.getAbsolutePath();
         this.size = file.length();
         this.isDirectory = file.isDirectory();
-        this.isHidden = file.isHidden();
-        this.isEncrypted = file.getName().toLowerCase().endsWith(".enc");
+        this.isEncrypted = name.toLowerCase().endsWith(".vault");
         this.lastModified = file.lastModified();
-        this.mimeType = getMimeType();
+        this.mimeType = detectType();
     }
 
-    private String getMimeType() {
+    private String detectType() {
         if (isDirectory) return "📁 مجلد";
-        String nameLower = name.toLowerCase();
-        if (nameLower.matches(".*\\.(jpg|jpeg|png|gif|bmp|webp|heic)$")) return "🖼️ صورة";
-        if (nameLower.matches(".*\\.(mp4|mkv|avi|mov|wmv|flv|3gp)$")) return "🎬 فيديو";
-        if (nameLower.matches(".*\\.(mp3|wav|ogg|m4a|aac|flac)$")) return "🎵 صوت";
-        if (nameLower.matches(".*\\.(pdf)$")) return "📄 PDF";
-        if (nameLower.matches(".*\\.(doc|docx)$")) return "📝 Word";
-        if (nameLower.matches(".*\\.(xls|xlsx)$")) return "📊 Excel";
-        if (nameLower.matches(".*\\.(ppt|pptx)$")) return "📽️ PowerPoint";
-        if (nameLower.matches(".*\\.(apk)$")) return "📦 APK";
-        if (nameLower.matches(".*\\.(zip|rar|7z|tar|gz)$")) return "🗜️ مضغوط";
-        if (nameLower.endsWith(".enc")) return "🔒 مشفر";
+        String n = name.toLowerCase();
+        if (n.matches(".*\\.(jpg|jpeg|png|gif|bmp|webp)$")) return "🖼️ صورة";
+        if (n.matches(".*\\.(mp4|mkv|avi|mov|3gp)$")) return "🎬 فيديو";
+        if (n.matches(".*\\.(mp3|wav|ogg|m4a|aac)$")) return "🎵 صوت";
+        if (n.matches(".*\\.(pdf)$")) return "📄 PDF";
+        if (n.matches(".*\\.(doc|docx)$")) return "📝 وورد";
+        if (n.matches(".*\\.(apk)$")) return "📦 APK";
+        if (n.matches(".*\\.(zip|rar|7z)$")) return "🗜️ مضغوط";
+        if (n.endsWith(".vault")) return "🔒 مشفر";
         return "📄 ملف";
     }
 
@@ -485,26 +323,49 @@ public class FileItem {
     public long getSize() { return size; }
     public boolean isDirectory() { return isDirectory; }
     public boolean isEncrypted() { return isEncrypted; }
-    public boolean isHidden() { return isHidden; }
     public String getMimeType() { return mimeType; }
-    public long getLastModified() { return lastModified; }
 
     public String getSizeFormatted() {
         if (isDirectory) return "";
         if (size < 1024) return size + " B";
-        if (size < 1024 * 1024) return String.format("%.1f KB", size / 1024.0);
-        if (size < 1024 * 1024 * 1024) return String.format("%.1f MB", size / (1024.0 * 1024));
-        return String.format("%.1f GB", size / (1024.0 * 1024 * 1024));
+        if (size < 1024 * 1024) return String.format(Locale.US, "%.1f KB", size / 1024.0);
+        if (size < 1024 * 1024 * 1024) return String.format(Locale.US, "%.1f MB", size / (1024.0 * 1024));
+        return String.format(Locale.US, "%.1f GB", size / (1024.0 * 1024 * 1024));
     }
 
     public String getDateFormatted() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault());
-        return sdf.format(new Date(lastModified));
+        return new SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
+            .format(new Date(lastModified));
     }
 }
 """)
 
-    # FileAdapter.java
+    write_file("app/src/main/java/com/zhare/filevault/models/ChatItem.java", """package com.zhare.filevault.models;
+
+/**
+ * 💖 Chat Message Model (WhatsApp-Style)
+ */
+public class ChatItem {
+    private String message;
+    private String time;
+    private boolean isSent; // true = sent by user, false = received (system)
+
+    public ChatItem(String message, boolean isSent) {
+        this.message = message;
+        this.isSent = isSent;
+        this.time = java.text.SimpleDateFormat.getTimeInstance(
+            java.text.DateFormat.SHORT, java.util.Locale.getDefault()
+        ).format(new java.util.Date());
+    }
+
+    public String getMessage() { return message; }
+    public String getTime() { return time; }
+    public boolean isSent() { return isSent; }
+}
+""")
+
+    section("JAVA - ADAPTERS")
+
     write_file("app/src/main/java/com/zhare/filevault/ui/FileAdapter.java", """package com.zhare.filevault.ui;
 
 import android.graphics.Color;
@@ -520,10 +381,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 💖 RecyclerView Adapter for File List
- * WhatsApp-style file browser
+ * 💖 File List Adapter (RecyclerView)
  */
 public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
+
     private List<FileItem> files = new ArrayList<>();
     private OnFileClickListener listener;
 
@@ -547,29 +408,35 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         FileItem file = files.get(position);
-        String icon = file.getMimeType().substring(0, 2);
-        
-        holder.tvIcon.setText(icon);
-        holder.tvFileName.setText(file.getName());
-        holder.tvFileInfo.setText(file.getDateFormatted() + 
-            (file.getSizeFormatted().isEmpty() ? "" : " • " + file.getSizeFormatted()));
-        holder.tvFileType.setText(file.getMimeType());
 
-        // Pink accent for encrypted files
-        if (file.isEncrypted()) {
-            holder.tvFileName.setTextColor(Color.parseColor("#EC4899"));
-            holder.tvIcon.setText("🔒");
-        } else if (file.isHidden()) {
-            holder.tvFileName.setTextColor(Color.parseColor("#AAFFFFFF"));
-        } else {
-            holder.tvFileName.setTextColor(Color.parseColor("#FFFFFF"));
-        }
-
-        // Folder icon
+        // Icon
         if (file.isDirectory()) {
             holder.tvIcon.setText("📁");
+        } else if (file.isEncrypted()) {
+            holder.tvIcon.setText("🔒");
+        } else {
+            holder.tvIcon.setText("📄");
         }
 
+        // Name
+        holder.tvName.setText(file.getName());
+        
+        // Encrypted files in PINK
+        if (file.isEncrypted()) {
+            holder.tvName.setTextColor(Color.parseColor("#EC4899"));
+        } else {
+            holder.tvName.setTextColor(Color.WHITE);
+        }
+
+        // Info
+        String info = file.getDateFormatted();
+        if (!file.getSizeFormatted().isEmpty()) {
+            info += " • " + file.getSizeFormatted();
+        }
+        info += " • " + file.getMimeType();
+        holder.tvInfo.setText(info);
+
+        // Click listeners
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onFileClick(file, position);
         });
@@ -594,25 +461,107 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
         return files.get(position);
     }
 
-    public List<FileItem> getFiles() {
-        return files;
-    }
-
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvIcon, tvFileName, tvFileInfo, tvFileType;
+        TextView tvIcon, tvName, tvInfo;
 
         ViewHolder(View itemView) {
             super(itemView);
             tvIcon = itemView.findViewById(R.id.tvIcon);
-            tvFileName = itemView.findViewById(R.id.tvFileName);
-            tvFileInfo = itemView.findViewById(R.id.tvFileInfo);
-            tvFileType = itemView.findViewById(R.id.tvFileType);
+            tvName = itemView.findViewById(R.id.tvName);
+            tvInfo = itemView.findViewById(R.id.tvInfo);
         }
     }
 }
 """)
 
-    # LockScreenActivity.java
+    write_file("app/src/main/java/com/zhare/filevault/ui/ChatAdapter.java", """package com.zhare.filevault.ui;
+
+import android.graphics.Color;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import com.zhare.filevault.R;
+import com.zhare.filevault.models.ChatItem;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 💖 WhatsApp-Style Chat Adapter
+ */
+public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
+
+    private List<ChatItem> messages = new ArrayList<>();
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
+            .inflate(R.layout.item_chat, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        ChatItem msg = messages.get(position);
+
+        holder.tvMessage.setText(msg.getMessage());
+        holder.tvTime.setText(msg.getTime());
+
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) holder.bubble.getLayoutParams();
+
+        if (msg.isSent()) {
+            // User message (Right side - Pink)
+            holder.bubble.setBackgroundResource(R.drawable.bg_chat_sent);
+            holder.tvMessage.setTextColor(Color.WHITE);
+            holder.tvTime.setTextColor(Color.parseColor("#CCFFFFFF"));
+            params.gravity = Gravity.END;
+        } else {
+            // System message (Left side - Dark)
+            holder.bubble.setBackgroundResource(R.drawable.bg_chat_received);
+            holder.tvMessage.setTextColor(Color.WHITE);
+            holder.tvTime.setTextColor(Color.parseColor("#99FFFFFF"));
+            params.gravity = Gravity.START;
+        }
+
+        holder.bubble.setLayoutParams(params);
+    }
+
+    @Override
+    public int getItemCount() {
+        return messages.size();
+    }
+
+    public void addMessage(ChatItem msg) {
+        messages.add(msg);
+        notifyItemInserted(messages.size() - 1);
+    }
+
+    public void setMessages(List<ChatItem> msgs) {
+        this.messages = msgs;
+        notifyDataSetChanged();
+    }
+
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        FrameLayout bubble;
+        TextView tvMessage, tvTime;
+
+        ViewHolder(View itemView) {
+            super(itemView);
+            bubble = itemView.findViewById(R.id.bubble);
+            tvMessage = itemView.findViewById(R.id.tvMessage);
+            tvTime = itemView.findViewById(R.id.tvTime);
+        }
+    }
+}
+""")
+
+    section("JAVA - ACTIVITIES")
+
     write_file(f"app/src/main/java/com/zhare/filevault/ui/LockScreenActivity.java", f"""package com.zhare.filevault.ui;
 
 import android.animation.ArgbEvaluator;
@@ -622,7 +571,6 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
@@ -631,16 +579,18 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.zhare.filevault.R;
+import com.zhare.filevault.crypto.AESHelper;
 
 /**
- * 💖 Lock Screen - Password 1234
- * Entry point of the app
+ * 💖 Lock Screen - First Activity
+ * Requires password 1234 to access the app
  */
 public class LockScreenActivity extends AppCompatActivity {{
-    private static final String PREFS_NAME = "FileVaultPrefs";
+
+    private static final String PREF_NAME = "FileVaultPrefs";
     private static final String KEY_UNLOCKED = "is_unlocked";
-    private static final String PASSWORD = "{APP_PASSWORD}";
-    
+    private static final String CORRECT_PASSWORD = "{APP_PASSWORD}";
+
     private EditText etPassword;
     private Button btnUnlock;
     private TextView tvTitle;
@@ -653,41 +603,41 @@ public class LockScreenActivity extends AppCompatActivity {{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lock);
 
-        // Set pink status bar
+        // Pink status bar
         getWindow().setStatusBarColor(Color.parseColor("#EC4899"));
         getWindow().setNavigationBarColor(Color.parseColor("#0D0610"));
 
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
 
         // Auto-login if already unlocked
-        if (prefs.getBoolean(KEY_UNLOCKED, false) && !getIntent().getBooleanExtra("force_lock", false)) {{
-            openMainApp();
+        if (prefs.getBoolean(KEY_UNLOCKED, false) && 
+            !getIntent().getBooleanExtra("force_lock", false)) {{
+            openApp();
             return;
         }}
 
         initViews();
-        setupAnimations();
+        setupAnimation();
     }}
 
     private void initViews() {{
+        tvTitle = findViewById(R.id.tvTitle);
         etPassword = findViewById(R.id.etPassword);
         btnUnlock = findViewById(R.id.btnUnlock);
-        tvTitle = findViewById(R.id.tvTitle);
 
-        // Auto-focus password field
         etPassword.requestFocus();
 
         btnUnlock.setOnClickListener(v -> verifyPassword());
-        
-        // Enter key submits
+
+        // Enter key
         etPassword.setOnEditorActionListener((v, actionId, event) -> {{
             verifyPassword();
             return true;
         }});
     }}
 
-    private void setupAnimations() {{
-        // Pulse animation on title
+    private void setupAnimation() {{
+        // Pulsing title color
         ValueAnimator colorAnim = ValueAnimator.ofObject(
             new ArgbEvaluator(),
             Color.parseColor("#EC4899"),
@@ -704,49 +654,54 @@ public class LockScreenActivity extends AppCompatActivity {{
 
     private void verifyPassword() {{
         String input = etPassword.getText().toString().trim();
-        
+
         if (input.isEmpty()) {{
-            etPassword.setError("❌ أدخل الرمز!");
-            shakeView(etPassword);
+            etPassword.setError("❌ أدخل رمز الدخول!");
+            shakeView();
             return;
         }}
 
-        if (input.equals(PASSWORD)) {{
-            // Success
+        if (AESHelper.verifyPassword(input)) {{
+            // SUCCESS
             prefs.edit().putBoolean(KEY_UNLOCKED, true).apply();
             Toast.makeText(this, "✅ مرحباً بك! 💖", Toast.LENGTH_SHORT).show();
-            
-            // Delay then open main
-            handler.postDelayed(this::openMainApp, 500);
+
+            handler.postDelayed(this::openApp, 400);
         }} else {{
-            // Failed
+            // FAILED
             failedAttempts++;
             etPassword.setText("");
             etPassword.setError("❌ رمز خطأ! (" + failedAttempts + "/3)");
-            shakeView(etPassword);
+            shakeView();
 
             if (failedAttempts >= 3) {{
-                btnUnlock.setEnabled(false);
-                etPassword.setEnabled(false);
-                btnUnlock.setText("⏳ انتظر 30 ثانية...");
-                
-                handler.postDelayed(() -> {{
-                    btnUnlock.setEnabled(true);
-                    etPassword.setEnabled(true);
-                    btnUnlock.setText("🔓 فتح");
-                    failedAttempts = 0;
-                }}, 30000);
+                lockApp();
             }}
         }}
     }}
 
-    private void shakeView(View view) {{
-        Animation shake = AnimationUtils.loadAnimation(this, R.anim.shake);
-        view.startAnimation(shake);
+    private void lockApp() {{
+        btnUnlock.setEnabled(false);
+        etPassword.setEnabled(false);
+        btnUnlock.setText("⏳ انتظر 30 ثانية...");
+
+        Toast.makeText(this, "🔒 تم القفل لمدة 30 ثانية", Toast.LENGTH_LONG).show();
+
+        handler.postDelayed(() -> {{
+            btnUnlock.setEnabled(true);
+            etPassword.setEnabled(true);
+            btnUnlock.setText("🔓 فتح");
+            failedAttempts = 0;
+        }}, 30000);
     }}
 
-    private void openMainApp() {{
-        startActivity(new Intent(this, MainActivity.class));
+    private void shakeView() {{
+        Animation shake = AnimationUtils.loadAnimation(this, R.anim.shake);
+        findViewById(R.id.lockContainer).startAnimation(shake);
+    }}
+
+    private void openApp() {{
+        startActivity(new Intent(this, ChatScreenActivity.class));
         finish();
         overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }}
@@ -754,7 +709,7 @@ public class LockScreenActivity extends AppCompatActivity {{
     @Override
     protected void onPause() {{
         super.onPause();
-        // Lock when app goes to background
+        // Re-lock when app goes to background
         prefs.edit().putBoolean(KEY_UNLOCKED, false).apply();
     }}
 
@@ -766,8 +721,201 @@ public class LockScreenActivity extends AppCompatActivity {{
 }}
 """)
 
-    # MainActivity.java
-    write_file("app/src/main/java/com/zhare/filevault/ui/MainActivity.java", """package com.zhare.filevault.ui;
+    write_file("app/src/main/java/com/zhare/filevault/ui/ChatScreenActivity.java", """package com.zhare.filevault.ui;
+
+import android.content.Intent;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
+import android.net.Uri;
+import android.os.Build;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.zhare.filevault.R;
+import com.zhare.filevault.models.ChatItem;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 💖 Main Chat Screen (WhatsApp-Style)
+ * The user interacts with the app through chat commands
+ */
+public class ChatScreenActivity extends AppCompatActivity {
+
+    private RecyclerView rvChat;
+    private ChatAdapter chatAdapter;
+    private EditText etMessage;
+    private ImageButton btnSend, btnFiles, btnLock;
+    private TextView tvToolbarTitle;
+    
+    private List<ChatItem> messages = new ArrayList<>();
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_chat);
+
+        // Pink theme
+        getWindow().setStatusBarColor(Color.parseColor("#EC4899"));
+        getWindow().setNavigationBarColor(Color.parseColor("#0D0610"));
+
+        initViews();
+        setupChat();
+        showWelcomeMessage();
+    }
+
+    private void initViews() {
+        tvToolbarTitle = findViewById(R.id.tvToolbarTitle);
+        rvChat = findViewById(R.id.rvChat);
+        etMessage = findViewById(R.id.etMessage);
+        btnSend = findViewById(R.id.btnSend);
+        btnFiles = findViewById(R.id.btnFiles);
+        btnLock = findViewById(R.id.btnLock);
+
+        tvToolbarTitle.setText("💖 File Vault");
+
+        rvChat.setLayoutManager(new LinearLayoutManager(this));
+        chatAdapter = new ChatAdapter();
+        rvChat.setAdapter(chatAdapter);
+
+        btnSend.setOnClickListener(v -> sendMessage());
+        btnFiles.setOnClickListener(v -> openFileManager());
+        btnLock.setOnClickListener(v -> lockApp());
+
+        // Enter to send
+        etMessage.setOnEditorActionListener((v, actionId, event) -> {
+            sendMessage();
+            return true;
+        });
+    }
+
+    private void setupChat() {
+        chatAdapter.setMessages(messages);
+    }
+
+    private void showWelcomeMessage() {
+        addSystemMessage("💖 مرحباً بك في File Vault!");
+        addSystemMessage("📁 ملفاتك محمية بتشفير AES-256");
+        addSystemMessage("🔒 الملفات تظهر مشوهة خارج التطبيق");
+        addSystemMessage("");
+        addSystemMessage("📋 الأوامر المتاحة:");
+        addSystemMessage("  📂 /files - فتح مدير الملفات");
+        addSystemMessage("  🔒 /lock - قفل التطبيق");
+        addSystemMessage("  ℹ️ /help - عرض المساعدة");
+        addSystemMessage("  📁 /storage - عرض مساحة التخزين");
+        addSystemMessage("");
+        addSystemMessage("👇 اضغط على 📂 لفتح الملفات أو اكتب أمراً");
+    }
+
+    private void sendMessage() {
+        String text = etMessage.getText().toString().trim();
+        if (text.isEmpty()) return;
+
+        // Add user message
+        ChatItem userMsg = new ChatItem(text, true);
+        messages.add(userMsg);
+        chatAdapter.addMessage(userMsg);
+        etMessage.setText("");
+
+        // Process command
+        processCommand(text);
+
+        // Scroll to bottom
+        rvChat.scrollToPosition(messages.size() - 1);
+    }
+
+    private void processCommand(String text) {
+        String cmd = text.toLowerCase();
+
+        if (cmd.equals("/files") || cmd.equals("📂") || cmd.contains("فتح الملفات")) {
+            openFileManager();
+        } else if (cmd.equals("/lock") || cmd.equals("🔒") || cmd.contains("قفل")) {
+            lockApp();
+        } else if (cmd.equals("/help") || cmd.equals("ℹ️") || cmd.contains("مساعدة")) {
+            showHelp();
+        } else if (cmd.equals("/storage") || cmd.contains("تخزين") || cmd.contains("مساحة")) {
+            showStorageInfo();
+        } else if (cmd.equals("/hi") || cmd.contains("مرحبا") || cmd.contains("هلا")) {
+            addSystemMessage("💖 أهلاً بك! كيف أقدر أساعدك؟");
+        } else if (!cmd.startsWith("/")) {
+            addSystemMessage("❓ لم أفهم. اكتب /help للمساعدة");
+        }
+    }
+
+    private void addSystemMessage(String msg) {
+        ChatItem sysMsg = new ChatItem(msg, false);
+        messages.add(sysMsg);
+        chatAdapter.addMessage(sysMsg);
+    }
+
+    private void openFileManager() {
+        // Check permission first
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("💖 صلاحية مطلوبة")
+                    .setMessage("نحتاج صلاحية الوصول لجميع الملفات لعرضها وتشفيرها.")
+                    .setPositiveButton("منح الصلاحية", (d, w) -> {
+                        Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                        intent.setData(Uri.parse("package:" + getPackageName()));
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("إلغاء", null)
+                    .show();
+                return;
+            }
+        }
+        startActivity(new Intent(this, FileManagerActivity.class));
+    }
+
+    private void lockApp() {
+        getSharedPreferences("FileVaultPrefs", MODE_PRIVATE)
+            .edit().putBoolean("is_unlocked", false).apply();
+        Intent intent = new Intent(this, LockScreenActivity.class);
+        intent.putExtra("force_lock", true);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
+        finish();
+    }
+
+    private void showHelp() {
+        addSystemMessage("📋 الأوامر:");
+        addSystemMessage("  📂 /files - مدير الملفات");
+        addSystemMessage("  🔒 /lock - قفل التطبيق");
+        addSystemMessage("  📁 /storage - مساحة التخزين");
+        addSystemMessage("  ℹ️ /help - هذه القائمة");
+    }
+
+    private void showStorageInfo() {
+        File path = Environment.getExternalStorageDirectory();
+        android.os.StatFs stat = new android.os.StatFs(path.getPath());
+        long blockSize = stat.getBlockSizeLong();
+        long totalBlocks = stat.getBlockCountLong();
+        long availableBlocks = stat.getAvailableBlocksLong();
+        long totalGB = (totalBlocks * blockSize) / (1024 * 1024 * 1024);
+        long freeGB = (availableBlocks * blockSize) / (1024 * 1024 * 1024);
+        addSystemMessage("📁 مساحة التخزين:");
+        addSystemMessage("  💾 الإجمالي: " + totalGB + " GB");
+        addSystemMessage("  🆓 المتاح: " + freeGB + " GB");
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Minimize instead of exit
+        moveTaskToBack(true);
+    }
+}
+""")
+
+    write_file("app/src/main/java/com/zhare/filevault/ui/FileManagerActivity.java", """package com.zhare.filevault.ui;
 
 import android.Manifest;
 import android.content.ClipData;
@@ -782,8 +930,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -795,10 +941,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.tabs.TabLayout;
 import com.zhare.filevault.R;
 import com.zhare.filevault.crypto.AESHelper;
 import com.zhare.filevault.models.FileItem;
@@ -808,59 +952,52 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * 💖 Main Activity - WhatsApp-style File Manager
+ * 💖 File Manager Activity
+ * Browse, Encrypt, Decrypt files on external storage
+ * Files encrypted with .vault extension appear CORRUPTED outside the app
  */
-public class MainActivity extends AppCompatActivity {
+public class FileManagerActivity extends AppCompatActivity {
+
     private RecyclerView rvFiles;
     private FileAdapter adapter;
-    private SwipeRefreshLayout swipeRefresh;
-    private TabLayout tabLayout;
-    private FloatingActionButton fabLock;
-    private TextView tvEmpty, tvPath;
+    private TextView tvPath, tvEmpty;
     private MaterialToolbar toolbar;
-    
+    private FloatingActionButton fabLock;
+
     private List<FileItem> allFiles = new ArrayList<>();
-    private String currentPath;
-    private String currentTab = "all";
+    private String currentPath = "";
     private ExecutorService executor = Executors.newSingleThreadExecutor();
     private Handler mainHandler = new Handler(Looper.getMainLooper());
-
-    private final ActivityResultLauncher<Intent> storagePermissionLauncher = 
-        registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                if (Environment.isExternalStorageManager()) {
-                    loadFiles(Environment.getExternalStorageDirectory().getAbsolutePath());
-                }
-            }
-        });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_files);
 
         // Pink theme
         getWindow().setStatusBarColor(Color.parseColor("#EC4899"));
         getWindow().setNavigationBarColor(Color.parseColor("#0D0610"));
 
         initViews();
-        setupTabs();
         setupListeners();
-        requestPermissions();
+        
+        // Load storage
+        if (checkPermission()) {
+            loadFiles(Environment.getExternalStorageDirectory().getAbsolutePath());
+        }
     }
 
     private void initViews() {
         toolbar = findViewById(R.id.toolbar);
         rvFiles = findViewById(R.id.rvFiles);
-        swipeRefresh = findViewById(R.id.swipeRefresh);
-        tabLayout = findViewById(R.id.tabLayout);
-        fabLock = findViewById(R.id.fabLock);
-        tvEmpty = findViewById(R.id.tvEmpty);
         tvPath = findViewById(R.id.tvPath);
+        tvEmpty = findViewById(R.id.tvEmpty);
+        fabLock = findViewById(R.id.fabLock);
 
-        toolbar.setTitle("💖 File Vault");
+        toolbar.setTitle("📂 مدير الملفات");
         toolbar.setTitleTextColor(Color.WHITE);
         toolbar.setBackgroundColor(Color.parseColor("#EC4899"));
+        toolbar.setNavigationOnClickListener(v -> goBack());
         setSupportActionBar(toolbar);
 
         rvFiles.setLayoutManager(new LinearLayoutManager(this));
@@ -870,9 +1007,10 @@ public class MainActivity extends AppCompatActivity {
                 if (file.isDirectory()) {
                     loadFiles(file.getPath());
                 } else {
-                    openFile(file);
+                    handleFileClick(file);
                 }
             }
+
             @Override
             public void onFileLongClick(FileItem file, int position) {
                 showFileOptions(file);
@@ -881,62 +1019,32 @@ public class MainActivity extends AppCompatActivity {
         rvFiles.setAdapter(adapter);
     }
 
-    private void setupTabs() {
-        String[] tabs = {"📁 الكل", "🖼️ صور", "🎬 فيديو", "🎵 صوت", "🔒 مشفر"};
-        for (String tab : tabs) {
-            tabLayout.addTab(tabLayout.newTab().setText(tab));
-        }
-
-        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override public void onTabSelected(TabLayout.Tab tab) {
-                switch (tab.getPosition()) {
-                    case 0: currentTab = "all"; break;
-                    case 1: currentTab = "images"; break;
-                    case 2: currentTab = "videos"; break;
-                    case 3: currentTab = "audio"; break;
-                    case 4: currentTab = "encrypted"; break;
-                }
-                filterFiles();
-            }
-            @Override public void onTabUnselected(TabLayout.Tab tab) {}
-            @Override public void onTabReselected(TabLayout.Tab tab) {}
-        });
-    }
-
     private void setupListeners() {
-        swipeRefresh.setOnRefreshListener(() -> {
-            if (currentPath != null) {
-                loadFiles(currentPath);
-            }
-            swipeRefresh.setRefreshing(false);
-        });
-
         fabLock.setOnClickListener(v -> {
             getSharedPreferences("FileVaultPrefs", MODE_PRIVATE)
                 .edit().putBoolean("is_unlocked", false).apply();
             Intent intent = new Intent(this, LockScreenActivity.class);
             intent.putExtra("force_lock", true);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(intent);
             finish();
         });
-
-        toolbar.setNavigationOnClickListener(v -> {
-            if (currentPath != null) {
-                File current = new File(currentPath);
-                File parent = current.getParentFile();
-                if (parent != null && parent.canRead()) {
-                    loadFiles(parent.getAbsolutePath());
-                }
-            }
-        });
     }
 
-    private void requestPermissions() {
+    private boolean checkPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
-                showPermissionDialog();
-            } else {
-                loadFiles(Environment.getExternalStorageDirectory().getAbsolutePath());
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("💖 صلاحية مطلوبة")
+                    .setMessage("نحتاج صلاحية الوصول لجميع الملفات.")
+                    .setPositiveButton("منح الصلاحية", (d, w) -> {
+                        Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                        intent.setData(Uri.parse("package:" + getPackageName()));
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("رجوع", (d, w) -> finish())
+                    .show();
+                return false;
             }
         } else {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
@@ -945,27 +1053,15 @@ public class MainActivity extends AppCompatActivity {
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
                 }, 100);
-            } else {
-                loadFiles(Environment.getExternalStorageDirectory().getAbsolutePath());
+                return false;
             }
         }
-    }
-
-    private void showPermissionDialog() {
-        new AlertDialog.Builder(this)
-            .setTitle("💖 صلاحيات مطلوبة")
-            .setMessage("يحتاج التطبيق صلاحية الوصول لجميع الملفات لعرضها وإدارتها.")
-            .setPositiveButton("منح الصلاحية", (d, w) -> {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                intent.setData(Uri.parse("package:" + getPackageName()));
-                storagePermissionLauncher.launch(intent);
-            })
-            .setNegativeButton("إلغاء", (d, w) -> finish())
-            .show();
+        return true;
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, 
+                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == 100 && grantResults.length > 0 
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -976,7 +1072,7 @@ public class MainActivity extends AppCompatActivity {
     private void loadFiles(String path) {
         tvEmpty.setVisibility(View.GONE);
         rvFiles.setVisibility(View.VISIBLE);
-        
+
         executor.execute(() -> {
             File dir = new File(path);
             List<FileItem> files = new ArrayList<>();
@@ -984,23 +1080,23 @@ public class MainActivity extends AppCompatActivity {
             if (dir.exists() && dir.isDirectory()) {
                 // Parent directory
                 File parent = dir.getParentFile();
-                if (parent != null && !path.equals("/")) {
+                if (parent != null && !isRoot(path)) {
                     files.add(new FileItem(parent) {
                         @Override
                         public String getName() { return "📁 .. (رجوع)"; }
                     });
                 }
 
-                File[] fileList = dir.listFiles();
-                if (fileList != null) {
-                    for (File f : fileList) {
-                        if (!f.isHidden() || f.getName().startsWith(".")) {
+                File[] list = dir.listFiles();
+                if (list != null) {
+                    for (File f : list) {
+                        if (!f.isHidden()) {
                             files.add(new FileItem(f));
                         }
                     }
                 }
 
-                // Sort: directories first, then by name
+                // Sort
                 files.sort((a, b) -> {
                     if (a.isDirectory() && !b.isDirectory()) return -1;
                     if (!a.isDirectory() && b.isDirectory()) return 1;
@@ -1013,83 +1109,67 @@ public class MainActivity extends AppCompatActivity {
                 currentPath = path;
                 allFiles = finalFiles;
                 tvPath.setText("📂 " + path);
-                filterFiles();
-                
-                if (finalFiles.isEmpty()) {
-                    tvEmpty.setVisibility(View.VISIBLE);
-                    rvFiles.setVisibility(View.GONE);
-                }
+                adapter.updateList(finalFiles);
+                rvFiles.scrollToPosition(0);
             });
         });
     }
 
-    private void filterFiles() {
-        List<FileItem> filtered = new ArrayList<>();
-        for (FileItem f : allFiles) {
-            switch (currentTab) {
-                case "images":
-                    if (f.getMimeType().contains("صورة")) filtered.add(f);
-                    break;
-                case "videos":
-                    if (f.getMimeType().contains("فيديو")) filtered.add(f);
-                    break;
-                case "audio":
-                    if (f.getMimeType().contains("صوت")) filtered.add(f);
-                    break;
-                case "encrypted":
-                    if (f.isEncrypted()) filtered.add(f);
-                    break;
-                default:
-                    filtered.add(f);
-            }
-        }
-        adapter.updateList(filtered);
+    private boolean isRoot(String path) {
+        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+        return path.equals(root) || path.equals("/") || path.equals("/storage");
     }
 
-    private void openFile(FileItem file) {
-        try {
-            File f = new File(file.getPath());
-            String mimeType;
-            String ext = file.getName().toLowerCase();
-            
-            if (ext.matches(".*\\.(jpg|jpeg|png|gif|bmp)$")) mimeType = "image/*";
-            else if (ext.matches(".*\\.(mp4|mkv|avi|3gp)$")) mimeType = "video/*";
-            else if (ext.matches(".*\\.(mp3|wav|ogg|m4a)$")) mimeType = "audio/*";
-            else if (ext.endsWith(".pdf")) mimeType = "application/pdf";
-            else if (ext.endsWith(".apk")) mimeType = "application/vnd.android.package-archive";
-            else mimeType = "*/*";
+    private void handleFileClick(FileItem file) {
+        if (file.isEncrypted()) {
+            // Ask to decrypt first
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("🔒 ملف مشفر")
+                .setMessage("هذا الملف مشفر. هل تريد فك التشفير؟")
+                .setPositiveButton("🔓 فك التشفير", (d, w) -> decryptFile(file))
+                .setNegativeButton("إلغاء", null)
+                .show();
+        } else {
+            // Try to open
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                String mime = "*/*";
+                String name = file.getName().toLowerCase();
+                if (name.matches(".*\\.(jpg|png|gif)$")) mime = "image/*";
+                else if (name.matches(".*\\.(mp4|mkv)$")) mime = "video/*";
+                else if (name.matches(".*\\.(mp3|wav)$")) mime = "audio/*";
+                else if (name.endsWith(".pdf")) mime = "application/pdf";
+                else if (name.endsWith(".apk")) mime = "application/vnd.android.package-archive";
 
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(Uri.fromFile(f), mimeType);
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            startActivity(Intent.createChooser(intent, "فتح " + file.getName()));
-        } catch (Exception e) {
-            Toast.makeText(this, "❌ لا يمكن فتح الملف", Toast.LENGTH_SHORT).show();
+                intent.setDataAndType(Uri.fromFile(new File(file.getPath())), mime);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(intent, "فتح " + file.getName()));
+            } catch (Exception e) {
+                Toast.makeText(this, "❌ لا يمكن فتح الملف", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
     private void showFileOptions(FileItem file) {
         String[] options;
         if (file.isEncrypted()) {
-            options = new String[]{"🔓 فك التشفير", "📋 نسخ المسار", "📝 إعادة تسمية", "ℹ️ معلومات", "🗑️ حذف"};
+            options = new String[]{"🔓 فك التشفير", "📋 نسخ المسار", "ℹ️ معلومات", "🗑️ حذف"};
         } else if (file.isDirectory()) {
-            options = new String[]{"📋 نسخ المسار", "ℹ️ معلومات"};
+            options = new String[]{"📁 فتح", "📋 نسخ المسار", "ℹ️ معلومات"};
         } else {
-            options = new String[]{"🔒 تشفير", "📋 نسخ المسار", "📝 إعادة تسمية", "ℹ️ معلومات", "🗑️ حذف"};
+            options = new String[]{"🔒 تشفير", "📋 نسخ المسار", "ℹ️ معلومات", "🗑️ حذف"};
         }
 
         new AlertDialog.Builder(this)
             .setTitle("💖 " + file.getName())
-            .setIcon(android.R.drawable.ic_menu_manage)
             .setItems(options, (dialog, which) -> {
-                switch (options[which]) {
-                    case "🔒 تشفير": encryptFile(file); break;
-                    case "🔓 فك التشفير": decryptFile(file); break;
-                    case "📋 نسخ المسار": copyToClipboard(file.getPath()); break;
-                    case "📝 إعادة تسمية": renameFile(file); break;
-                    case "ℹ️ معلومات": showFileInfo(file); break;
-                    case "🗑️ حذف": deleteFile(file); break;
-                }
+                String chosen = options[which];
+                if (chosen.contains("تشفير")) encryptFile(file);
+                else if (chosen.contains("فك")) decryptFile(file);
+                else if (chosen.contains("نسخ")) copyPath(file);
+                else if (chosen.contains("معلومات")) showInfo(file);
+                else if (chosen.contains("حذف")) deleteFile(file);
+                else if (chosen.contains("فتح")) loadFiles(file.getPath());
             })
             .show();
     }
@@ -1097,7 +1177,8 @@ public class MainActivity extends AppCompatActivity {
     private void encryptFile(FileItem file) {
         new AlertDialog.Builder(this)
             .setTitle("🔒 تأكيد التشفير")
-            .setMessage("سيتم تشفير: " + file.getName() + "\\n\\nسيتم حذف الملف الأصلي!")
+            .setMessage("سيتم تشفير الملف:\n" + file.getName() + 
+                "\n\n• سيضاف امتداد .vault\n• الملف الأصلي سيُحذف\n• لن يفتح خارج التطبيق")
             .setPositiveButton("تشفير", (d, w) -> {
                 executor.execute(() -> {
                     try {
@@ -1108,20 +1189,20 @@ public class MainActivity extends AppCompatActivity {
                         fis.close();
 
                         byte[] encrypted = AESHelper.encryptFile(data);
-                        File encryptedFile = new File(file.getPath() + ".enc");
-                        FileOutputStream fos = new FileOutputStream(encryptedFile);
+                        File outFile = new File(file.getPath() + ".vault");
+                        FileOutputStream fos = new FileOutputStream(outFile);
                         fos.write(encrypted);
                         fos.close();
 
+                        // Delete original
                         f.delete();
 
                         mainHandler.post(() -> {
-                            Toast.makeText(this, "✅ تم التشفير!", Toast.LENGTH_SHORT).show();
-                            loadFiles(encryptedFile.getParent());
+                            Toast.makeText(this, "✅ تم التشفير: " + outFile.getName(), Toast.LENGTH_SHORT).show();
+                            loadFiles(outFile.getParent());
                         });
                     } catch (Exception e) {
-                        mainHandler.post(() -> 
-                            Toast.makeText(this, "❌ فشل التشفير", Toast.LENGTH_SHORT).show());
+                        mainHandler.post(() -> Toast.makeText(this, "❌ فشل التشفير", Toast.LENGTH_SHORT).show());
                     }
                 });
             })
@@ -1132,8 +1213,8 @@ public class MainActivity extends AppCompatActivity {
     private void decryptFile(FileItem file) {
         new AlertDialog.Builder(this)
             .setTitle("🔓 تأكيد فك التشفير")
-            .setMessage("سيتم فك تشفير: " + file.getName() + "\\n\\nسيتم حذف الملف المشفر!")
-            .setPositiveButton("فك", (d, w) -> {
+            .setMessage("سيتم فك تشفير:\n" + file.getName() + "\n\n• سيتم استعادة الملف الأصلي\n• الملف المشفر سيُحذف")
+            .setPositiveButton("فك التشفير", (d, w) -> {
                 executor.execute(() -> {
                     try {
                         File f = new File(file.getPath());
@@ -1143,21 +1224,20 @@ public class MainActivity extends AppCompatActivity {
                         fis.close();
 
                         byte[] decrypted = AESHelper.decryptFile(data);
-                        String originalName = file.getPath().replace(".enc", "");
-                        File decryptedFile = new File(originalName);
-                        FileOutputStream fos = new FileOutputStream(decryptedFile);
+                        String origPath = file.getPath().replace(".vault", "");
+                        File outFile = new File(origPath);
+                        FileOutputStream fos = new FileOutputStream(outFile);
                         fos.write(decrypted);
                         fos.close();
 
                         f.delete();
 
                         mainHandler.post(() -> {
-                            Toast.makeText(this, "✅ تم فك التشفير!", Toast.LENGTH_SHORT).show();
-                            loadFiles(decryptedFile.getParent());
+                            Toast.makeText(this, "✅ تم فك التشفير", Toast.LENGTH_SHORT).show();
+                            loadFiles(outFile.getParent());
                         });
                     } catch (Exception e) {
-                        mainHandler.post(() -> 
-                            Toast.makeText(this, "❌ فشل - كلمة السر خطأ", Toast.LENGTH_SHORT).show());
+                        mainHandler.post(() -> Toast.makeText(this, "❌ فشل - كلمة السر خطأ", Toast.LENGTH_SHORT).show());
                     }
                 });
             })
@@ -1165,49 +1245,22 @@ public class MainActivity extends AppCompatActivity {
             .show();
     }
 
-    private void copyToClipboard(String text) {
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText("path", text);
-        clipboard.setPrimaryClip(clip);
-        Toast.makeText(this, "✅ تم النسخ", Toast.LENGTH_SHORT).show();
+    private void copyPath(FileItem file) {
+        ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        cm.setPrimaryClip(ClipData.newPlainText("path", file.getPath()));
+        Toast.makeText(this, "✅ تم نسخ المسار", Toast.LENGTH_SHORT).show();
     }
 
-    private void renameFile(FileItem file) {
-        android.widget.EditText input = new android.widget.EditText(this);
-        input.setText(file.getName());
-        input.setTextColor(Color.WHITE);
-        input.setHintTextColor(Color.parseColor("#66FFFFFF"));
-        
-        new AlertDialog.Builder(this)
-            .setTitle("📝 إعادة تسمية")
-            .setView(input)
-            .setPositiveButton("حفظ", (d, w) -> {
-                String newName = input.getText().toString().trim();
-                if (!newName.isEmpty()) {
-                    File f = new File(file.getPath());
-                    File newFile = new File(f.getParent(), newName);
-                    if (f.renameTo(newFile)) {
-                        Toast.makeText(this, "✅ تم!", Toast.LENGTH_SHORT).show();
-                        loadFiles(f.getParent());
-                    } else {
-                        Toast.makeText(this, "❌ فشل", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            })
-            .setNegativeButton("إلغاء", null)
-            .show();
-    }
-
-    private void showFileInfo(FileItem file) {
-        String info = "📄 الاسم: " + file.getName() + "\\n"
-            + "📁 المسار: " + file.getPath() + "\\n"
-            + "📏 الحجم: " + file.getSizeFormatted() + "\\n"
-            + "📅 التاريخ: " + file.getDateFormatted() + "\\n"
-            + "🔒 مشفر: " + (file.isEncrypted() ? "نعم" : "لا") + "\\n"
-            + "📁 مجلد: " + (file.isDirectory() ? "نعم" : "لا");
+    private void showInfo(FileItem file) {
+        String info = "📄 الاسم: " + file.getName() + "\n"
+            + "📁 المسار: " + file.getPath() + "\n"
+            + "📏 الحجم: " + file.getSizeFormatted() + "\n"
+            + "📅 التاريخ: " + file.getDateFormatted() + "\n"
+            + "🔒 مشفر: " + (file.isEncrypted() ? "نعم" : "لا") + "\n"
+            + "📂 مجلد: " + (file.isDirectory() ? "نعم" : "لا");
 
         new AlertDialog.Builder(this)
-            .setTitle("ℹ️ معلومات الملف")
+            .setTitle("ℹ️ معلومات")
             .setMessage(info)
             .setPositiveButton("حسناً", null)
             .show();
@@ -1216,150 +1269,490 @@ public class MainActivity extends AppCompatActivity {
     private void deleteFile(FileItem file) {
         new AlertDialog.Builder(this)
             .setTitle("🗑️ تأكيد الحذف")
-            .setMessage("هل أنت متأكد من حذف:\\n" + file.getName() + "\\n\\nلا يمكن التراجع!")
-            .setIcon(android.R.drawable.ic_delete)
-            .setPositiveButton("🗑️ حذف", (d, w) -> {
+            .setMessage("هل أنت متأكد؟\n" + file.getName() + "\n\n⚠️ لا يمكن التراجع!")
+            .setPositiveButton("حذف", (d, w) -> {
                 File f = new File(file.getPath());
-                boolean deleted;
-                if (f.isDirectory()) {
-                    deleted = deleteDirectory(f);
-                } else {
-                    deleted = f.delete();
-                }
+                boolean deleted = f.delete();
                 if (deleted) {
                     Toast.makeText(this, "✅ تم الحذف", Toast.LENGTH_SHORT).show();
                     loadFiles(f.getParent());
                 } else {
-                    Toast.makeText(this, "❌ فشل الحذف", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "❌ فشل", Toast.LENGTH_SHORT).show();
                 }
             })
             .setNegativeButton("إلغاء", null)
             .show();
     }
 
-    private boolean deleteDirectory(File dir) {
-        if (dir.isDirectory()) {
-            File[] children = dir.listFiles();
-            if (children != null) {
-                for (File child : children) {
-                    deleteDirectory(child);
-                }
+    private void goBack() {
+        if (currentPath != null && !currentPath.isEmpty()) {
+            File current = new File(currentPath);
+            File parent = current.getParentFile();
+            if (parent != null && !isRoot(currentPath)) {
+                loadFiles(parent.getAbsolutePath());
+            } else {
+                finish();
             }
-        }
-        return dir.delete();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.action_lock) {
-            getSharedPreferences("FileVaultPrefs", MODE_PRIVATE)
-                .edit().putBoolean("is_unlocked", false).apply();
-            startActivity(new Intent(this, LockScreenActivity.class));
+        } else {
             finish();
-        } else if (id == R.id.action_home) {
-            loadFiles(Environment.getExternalStorageDirectory().getAbsolutePath());
-        } else if (id == R.id.action_about) {
-            new AlertDialog.Builder(this)
-                .setTitle("💖 File Vault")
-                .setMessage("إصدار 1.0\\n\\n🔐 تشفير AES-256\\n📱 واجهة واتساب\\n🎨 تصميم زهري\\n\\nZHARE © 2026")
-                .setPositiveButton("💖", null)
-                .show();
         }
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
     public void onBackPressed() {
-        if (currentPath != null) {
-            File current = new File(currentPath);
-            File parent = current.getParentFile();
-            File root = Environment.getExternalStorageDirectory();
-            if (parent != null && !currentPath.equals(root.getAbsolutePath()) && !currentPath.equals("/")) {
-                loadFiles(parent.getAbsolutePath());
-                return;
-            }
-        }
-        super.onBackPressed();
+        goBack();
     }
 }
 """)
 
-    # FileViewerActivity.java (simple placeholder)
-    write_file("app/src/main/java/com/zhare/filevault/ui/FileViewerActivity.java", """package com.zhare.filevault.ui;
+    section("XML LAYOUTS")
 
-import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
-import com.zhare.filevault.R;
+    write_file("app/src/main/res/layout/activity_lock.xml", """<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#0D0610">
 
-/**
- * 💖 File Viewer Activity
- */
-public class FileViewerActivity extends AppCompatActivity {
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_viewer);
-    }
-}
+    <LinearLayout
+        android:id="@+id/lockContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:layout_gravity="center">
+
+        <!-- Logo -->
+        <TextView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:text="💖"
+            android:textSize="56sp"
+            android:gravity="center"
+            android:background="@drawable/bg_circle"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="File Vault"
+            android:textSize="32sp"
+            android:textColor="#EC4899"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Subtitle -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔐 أدخل رمز الدخول للمتابعة"
+            android:textSize="14sp"
+            android:textColor="#99FFFFFF"
+            android:layout_marginBottom="40dp" />
+
+        <!-- Password Input -->
+        <EditText
+            android:id="@+id/etPassword"
+            android:layout_width="280dp"
+            android:layout_height="60dp"
+            android:inputType="numberPassword"
+            android:hint="🔒 ●●●●"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#44FFFFFF"
+            android:background="@drawable/bg_input"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:textAlignment="center"
+            android:maxLength="6"
+            android:textSize="22sp"
+            android:letterSpacing="0.2"
+            android:imeOptions="actionDone" />
+
+        <!-- Unlock Button -->
+        <Button
+            android:id="@+id/btnUnlock"
+            android:layout_width="280dp"
+            android:layout_height="60dp"
+            android:text="🔓 فتح التطبيق"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_button"
+            android:layout_marginTop="36dp"
+            android:elevation="12dp" />
+
+        <!-- Footer -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💖 ZHARE © 2026"
+            android:textSize="11sp"
+            android:textColor="#44FFFFFF"
+            android:layout_marginTop="60dp" />
+
+    </LinearLayout>
+</ScrollView>
 """)
 
-    section("RESOURCES")
+    write_file("app/src/main/res/layout/activity_chat.xml", """<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0D0610">
 
-    # Colors
+    <!-- Toolbar -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#EC4899"
+        app:titleTextColor="#FFFFFF">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvToolbarTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="💖 File Vault"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnFiles"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="📂"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="فتح الملفات"
+                android:layout_marginEnd="4dp" />
+
+            <ImageButton
+                android:id="@+id/btnLock"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="🔒"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="قفل التطبيق" />
+
+        </LinearLayout>
+
+    </com.google.android.material.appbar.MaterialToolbar>
+
+    <!-- Chat Messages -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvChat"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="12dp"
+        android:clipToPadding="false" />
+
+    <!-- Input Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp"
+        android:background="#1A0D0610"
+        android:elevation="8dp">
+
+        <EditText
+            android:id="@+id/etMessage"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:hint="💬 اكتب رسالة أو أمر..."
+            android:textColor="#FFFFFF"
+            android:textColorHint="#66FFFFFF"
+            android:background="@drawable/bg_input_chat"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:maxLines="3"
+            android:inputType="textMultiLine" />
+
+        <ImageButton
+            android:id="@+id/btnSend"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="📤"
+            android:background="@drawable/bg_send_btn"
+            android:layout_marginStart="8dp"
+            android:contentDescription="إرسال" />
+
+    </LinearLayout>
+</LinearLayout>
+""")
+
+    write_file("app/src/main/res/layout/activity_files.xml", """<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0D0610">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#EC4899">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:titleTextColor="#FFFFFF"
+            app:navigationIcon="⬅️" />
+
+        <TextView
+            android:id="@+id/tvPath"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#CCFFFFFF"
+            android:textSize="11sp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="6dp"
+            android:maxLines="1"
+            android:ellipsize="start" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvFiles"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="4dp"
+            android:clipToPadding="false" />
+
+        <TextView
+            android:id="@+id/tvEmpty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="📂 لا توجد ملفات"
+            android:textColor="#99FFFFFF"
+            android:textSize="16sp"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabLock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="20dp"
+        android:text="🔒"
+        app:backgroundTint="#EC4899"
+        app:tint="#FFFFFF"
+        app:elevation="12dp" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+""")
+
+    write_file("app/src/main/res/layout/item_file.xml", """<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="10dp"
+    android:gravity="center_vertical"
+    android:minHeight="64dp"
+    android:background="?attr/selectableItemBackground">
+
+    <TextView
+        android:id="@+id/tvIcon"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:gravity="center"
+        android:textSize="24sp"
+        android:background="@drawable/bg_icon"
+        android:layout_marginEnd="10dp"
+        android:text="📄" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginEnd="8dp">
+
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/tvInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#99FFFFFF"
+            android:textSize="11sp"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+</LinearLayout>
+""")
+
+    write_file("app/src/main/res/layout/item_chat.xml", """<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
+
+    <LinearLayout
+        android:id="@+id/bubble"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="280dp"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
+            android:textColor="#99FFFFFF"
+            android:layout_marginTop="4dp"
+            android:layout_gravity="end" />
+
+    </LinearLayout>
+</FrameLayout>
+""")
+
+    section("DRAWABLES")
+
+    write_file("app/src/main/res/drawable/bg_circle.xml", """<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="#1AEC4899" />
+    <stroke android:width="2dp" android:color="#33EC4899" />
+</shape>
+""")
+
+    write_file("app/src/main/res/drawable/bg_input.xml", """<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#1AEC4899" />
+    <corners android:radius="30dp" />
+    <stroke android:width="1.5dp" android:color="#33EC4899" />
+</shape>
+""")
+
+    write_file("app/src/main/res/drawable/bg_button.xml", """<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:startColor="#EC4899" android:endColor="#F472B6" android:angle="135" />
+    <corners android:radius="30dp" />
+</shape>
+""")
+
+    write_file("app/src/main/res/drawable/bg_input_chat.xml", """<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#15FFFFFF" />
+    <corners android:radius="24dp" />
+    <stroke android:width="1dp" android:color="#22EC4899" />
+</shape>
+""")
+
+    write_file("app/src/main/res/drawable/bg_send_btn.xml", """<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <gradient android:startColor="#EC4899" android:endColor="#F472B6" android:angle="135" />
+</shape>
+""")
+
+    write_file("app/src/main/res/drawable/bg_chat_sent.xml", """<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:startColor="#EC4899" android:endColor="#F472B6" android:angle="135" />
+    <corners android:topLeftRadius="20dp" android:topRightRadius="20dp" android:bottomLeftRadius="20dp" android:bottomRightRadius="4dp" />
+</shape>
+""")
+
+    write_file("app/src/main/res/drawable/bg_chat_received.xml", """<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#1AEC4899" />
+    <corners android:topLeftRadius="20dp" android:topRightRadius="20dp" android:bottomLeftRadius="4dp" android:bottomRightRadius="20dp" />
+    <stroke android:width="1dp" android:color="#22EC4899" />
+</shape>
+""")
+
+    write_file("app/src/main/res/drawable/bg_icon.xml", """<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#0AEC4899" />
+    <corners android:radius="10dp" />
+</shape>
+""")
+
+    section("VALUES")
+
     write_file("app/src/main/res/values/colors.xml", """<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="pink_primary">#EC4899</color>
     <color name="pink_secondary">#F472B6</color>
     <color name="pink_light">#FBCFE8</color>
-    <color name="pink_dark">#BE185D</color>
     <color name="surface_dark">#0D0610</color>
-    <color name="surface_darker">#08030A</color>
     <color name="white">#FFFFFF</color>
     <color name="text_primary">#FFFFFF</color>
     <color name="text_secondary">#99FFFFFF</color>
-    <color name="text_hint">#44FFFFFF</color>
-    <color name="success">#4ADE80</color>
-    <color name="error">#F87171</color>
-    <color name="warning">#FBBF24</color>
 </resources>
 """)
 
-    # Themes
     write_file("app/src/main/res/values/themes.xml", """<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.FileVault" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/pink_primary</item>
         <item name="colorPrimaryVariant">@color/pink_secondary</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/pink_secondary</item>
         <item name="android:statusBarColor">@color/pink_primary</item>
         <item name="android:navigationBarColor">@color/surface_dark</item>
         <item name="android:windowBackground">@color/surface_dark</item>
-        <item name="android:textColor">@color/text_primary</item>
     </style>
 </resources>
 """)
 
-    # Strings
     write_file("app/src/main/res/values/strings.xml", """<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">File Vault 💖</string>
 </resources>
 """)
 
-    # Animations
+    section("ANIMATIONS")
+
     write_file("app/src/main/res/anim/shake.xml", """<?xml version="1.0" encoding="utf-8"?>
-<translate xmlns:android="http://schemas.android.com/apk/res/android"
-    android:fromXDelta="0" android:toXDelta="10"
-    android:duration="100"
-    android:interpolator="@android:anim/cycle_interpolator" />
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <translate android:fromXDelta="0" android:toXDelta="15"
+        android:duration="80" android:interpolator="@android:anim/cycle_interpolator" />
+</set>
 """)
 
     write_file("app/src/main/res/anim/slide_in_right.xml", """<?xml version="1.0" encoding="utf-8"?>
@@ -1376,317 +1769,8 @@ public class FileViewerActivity extends AppCompatActivity {
 </set>
 """)
 
-    section("LAYOUT FILES")
+    section("MIPMAP (ICONS)")
 
-    # Lock Screen
-    write_file("app/src/main/res/layout/activity_lock.xml", """<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:background="@color/surface_dark"
-    android:padding="32dp">
-
-    <TextView
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:text="💖"
-        android:textSize="64sp"
-        android:gravity="center"
-        android:background="@drawable/bg_icon_circle"
-        android:layout_marginBottom="24dp" />
-
-    <TextView
-        android:id="@+id/tvTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="File Vault"
-        android:textSize="28sp"
-        android:textColor="@color/pink_primary"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="أدخل رمز الدخول للمتابعة"
-        android:textSize="14sp"
-        android:textColor="@color/text_secondary"
-        android:layout_marginBottom="32dp" />
-
-    <EditText
-        android:id="@+id/etPassword"
-        android:layout_width="260dp"
-        android:layout_height="56dp"
-        android:inputType="numberPassword"
-        android:hint="🔒 ●●●●"
-        android:textColor="@color/text_primary"
-        android:textColorHint="@color/text_hint"
-        android:background="@drawable/bg_input"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:textAlignment="center"
-        android:maxLength="4"
-        android:textSize="24sp"
-        android:letterSpacing="0.3"
-        android:imeOptions="actionDone" />
-
-    <Button
-        android:id="@+id/btnUnlock"
-        android:layout_width="260dp"
-        android:layout_height="56dp"
-        android:text="🔓 فتح التطبيق"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:background="@drawable/bg_button"
-        android:layout_marginTop="32dp"
-        android:elevation="12dp"
-        android:stateListAnimator="@null" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="ZHARE © 2026"
-        android:textSize="11sp"
-        android:textColor="@color/text_hint"
-        android:layout_marginTop="48dp" />
-
-</LinearLayout>
-""")
-
-    # Main Activity
-    write_file("app/src/main/res/layout/activity_main.xml", """<?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout 
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/surface_dark"
-    android:fitsSystemWindows="true">
-
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/pink_primary"
-        android:fitsSystemWindows="true">
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:navigationIcon="📁"
-            app:titleTextColor="@color/white" />
-
-        <TextView
-            android:id="@+id/tvPath"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="11sp"
-            android:textColor="#AAFFFFFF"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="4dp"
-            android:maxLines="1"
-            android:ellipsize="start" />
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabLayout"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@color/pink_primary"
-            app:tabTextColor="#CCFFFFFF"
-            app:tabSelectedTextColor="@color/white"
-            app:tabIndicatorColor="@color/white"
-            app:tabIndicatorHeight="3dp"
-            app:tabMode="scrollable" />
-
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipeRefresh"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvFiles"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="4dp"
-                android:clipToPadding="false" />
-
-            <TextView
-                android:id="@+id/tvEmpty"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="📂 لا توجد ملفات"
-                android:textSize="16sp"
-                android:textColor="@color/text_secondary"
-                android:visibility="gone" />
-
-        </FrameLayout>
-
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabLock"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="24dp"
-        android:src="🔒"
-        android:contentDescription="قفل التطبيق"
-        app:backgroundTint="@color/pink_primary"
-        app:tint="@color/white"
-        app:elevation="12dp"
-        app:fabSize="normal" />
-
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
-""")
-
-    # File Item
-    write_file("app/src/main/res/layout/item_file.xml", """<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="10dp"
-    android:gravity="center_vertical"
-    android:background="?attr/selectableItemBackground"
-    android:minHeight="68dp">
-
-    <TextView
-        android:id="@+id/tvIcon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:gravity="center"
-        android:textSize="26sp"
-        android:layout_marginEnd="12dp"
-        android:background="@drawable/bg_icon_small"
-        android:text="📄" />
-
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:layout_marginEnd="8dp">
-
-        <TextView
-            android:id="@+id/tvFileName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/tvFileInfo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp"
-            android:layout_marginTop="3dp" />
-
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvFileType"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="@color/text_hint"
-        android:textSize="10sp"
-        android:maxLines="1" />
-
-</LinearLayout>
-""")
-
-    # Viewer Activity
-    write_file("app/src/main/res/layout/activity_viewer.xml", """<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/surface_dark"
-    android:gravity="center">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="💖 File Viewer"
-        android:textSize="24sp"
-        android:textColor="@color/pink_primary" />
-
-</LinearLayout>
-""")
-
-    # Menu
-    write_file("app/src/main/res/menu/main_menu.xml", """<?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-    <item
-        android:id="@+id/action_home"
-        android:title="🏠 الرئيسية"
-        android:icon="@android:drawable/ic_menu_directions"
-        app:showAsAction="ifRoom" />
-
-    <item
-        android:id="@+id/action_lock"
-        android:title="🔒 قفل"
-        android:icon="@android:drawable/ic_lock_lock"
-        app:showAsAction="always" />
-
-    <item
-        android:id="@+id/action_about"
-        android:title="💖 حول التطبيق"
-        app:showAsAction="never" />
-
-</menu>
-""")
-
-    # Drawables
-    write_file("app/src/main/res/drawable/bg_input.xml", """<?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#1AEC4899" />
-    <corners android:radius="28dp" />
-    <stroke android:width="1.5dp" android:color="#33EC4899" />
-</shape>
-""")
-
-    write_file("app/src/main/res/drawable/bg_button.xml", """<?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <gradient 
-        android:startColor="#EC4899" 
-        android:endColor="#F472B6" 
-        android:angle="135"
-        android:type="linear" />
-    <corners android:radius="28dp" />
-</shape>
-""")
-
-    write_file("app/src/main/res/drawable/bg_icon_circle.xml", """<?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-    <solid android:color="#1AEC4899" />
-    <stroke android:width="2dp" android:color="#33EC4899" />
-</shape>
-""")
-
-    write_file("app/src/main/res/drawable/bg_icon_small.xml", """<?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#0AEC4899" />
-    <corners android:radius="12dp" />
-</shape>
-""")
-
-    # Mipmap (simple placeholder icons)
     write_file("app/src/main/res/mipmap-hdpi/ic_launcher.xml", """<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/pink_primary" />
@@ -1701,143 +1785,119 @@ public class FileViewerActivity extends AppCompatActivity {
 </adaptive-icon>
 """)
 
-    section("GITHUB ACTIONS")
+    section("GITHUB ACTIONS WORKFLOW")
 
-    # Main workflow
-    write_file(".github/workflows/main.yml", f"""name: 💖 Build File Vault APK
+    write_file(".github/workflows/main.yml", """name: 💖 Build File Vault APK
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
-
-env:
-  APPLICATION_ID: "{PACKAGE_NAME}"
-  APP_NAME: "{PROJECT_NAME}"
 
 jobs:
   build:
-    name: 🏗️ Build APK
     runs-on: ubuntu-latest
     
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
-      
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📝 Generate Project Files
+        run: python scraper.py
+
+      - name: 📂 Move Files to Root
+        run: |
+          cp -r FileVault/* .
+          cp -r FileVault/.gitignore . 2>/dev/null || true
+
       - name: ☕ Setup JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      
+
       - name: 📱 Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
           api-level: 34
           build-tools: 34.0.0
-      
-      - name: 🔧 Grant Execute Permission
+
+      - name: 🔧 Make gradlew Executable
         run: chmod +x gradlew
-      
-      - name: 🏗️ Build Release APK
-        run: ./gradlew assembleRelease
-      
+
       - name: 🏗️ Build Debug APK
         run: ./gradlew assembleDebug
-      
-      - name: 📦 Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{{{ env.APP_NAME }}}}-Release
-          path: app/build/outputs/apk/release/*.apk
-          retention-days: 30
-      
+
+      - name: 🏗️ Build Release APK
+        run: ./gradlew assembleRelease
+
       - name: 📦 Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: ${{{{ env.APP_NAME }}}}-Debug
+          name: FileVault-Debug-APK
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 7
 
-  release:
-    name: 📦 Create Release
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
-    steps:
-      - name: 📥 Download APK
-        uses: actions/download-artifact@v4
+      - name: 📦 Upload Release APK
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{{{ env.APP_NAME }}}}-Release
-          path: apk/
-      
-      - name: 🚀 Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: "${{{{ env.APP_NAME }}}} 💖"
-          tag_name: "v1.0-${{{{ github.run_number }}}}"
-          body: |
-            ## 💖 File Vault APK
-            
-            ### 🎯 المميزات:
-            - 🔐 تشفير AES-256
-            - 📱 واجهة واتساب
-            - 🔒 كلمة سر: 1234
-            - 📁 تصفح جميع الملفات
-            
-            ### 📥 التحميل:
-            حمل ملف APK من الأسفل 👇
-          files: apk/*.apk
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{{{ secrets.GITHUB_TOKEN }}}}
+          name: FileVault-Release-APK
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
 """)
 
-    # README
-    write_file("README.md", f"""# 💖 {PROJECT_NAME}
+    # Final summary
+    print(f"""
+{'='*60}
+  💖 BUILD COMPLETE! ✨
+{'='*60}
 
-<div align="center">
+  📊 Stats:
+     • {TOTAL_FILES} files generated
+     • {TOTAL_LINES}+ lines of code
 
-![Logo](https://img.shields.io/badge/💖-File_Vault-EC4899?style=for-the-badge)
-![Platform](https://img.shields.io/badge/📱-Android-34A853?style=for-the-badge)
-![License](https://img.shields.io/badge/📄-MIT-blue?style=for-the-badge)
+  📁 Project: {ROOT_DIR}
 
-</div>
+  🎯 Features:
+     • 💬 WhatsApp-Style Chat Interface
+     • 🔐 AES-256 File Encryption
+     • 📁 External Storage Browser
+     • 🔒 Password: 1234
+     • 💖 Pink Rose Glass Theme
+     • ⚡ Files Appear CORRUPTED Outside App
 
----
+  🚀 To Push to GitHub:
+     cd {PROJECT_NAME}
+     git init
+     git add .
+     git commit -m "💖 File Vault"
+     git remote add origin YOUR_REPO_URL
+     git push -u origin main
 
-## 📱 تطبيق أندرويد لإدارة وتشفير الملفات
+  ⚡ GitHub Actions will auto-build APK!
+     (Then add build-apk.yml for manual builds)
 
-### 🔐 المميزات:
+  💖 ZHARE - File Vault Ready!
+{'='*60}
+""")
 
-| الميزة | الوصف |
-|--------|-------|
-| 🔒 **حماية** | كلمة سر `1234` لدخول التطبيق |
-| 🔐 **تشفير** | AES-256 لتشفير الملفات |
-| 📁 **تصفح** | جميع ملفات الذاكرة الداخلية والخارجية |
-| 🎨 **تصميم** | واجهة تشبه واتساب + لون زهري |
-| 📂 **تصنيف** | تبويبات (صور، فيديو، صوت، مشفر) |
-| ⚡ **سرعة** | تحميل الملفات في خلفية منفصلة |
+# ═══════════════════════════════════════════════════════════
+# 💖 MAIN
+# ═══════════════════════════════════════════════════════════
 
----
-
-### 📥 التحميل:
-
-1. اذهب إلى [**Actions**](../../actions)
-2. اختر آخر **Build**
-3. حمل **APK** من **Artifacts**
-
-أو من [**Releases**](../../releases)
-
----
-
-### 🚀 البناء من المصدر:
-
-```bash
-git clone https://github.com/jasim28v-cloud/Apkk.git
-cd Apkk
-./gradlew assembleRelease
+if __name__ == "__main__":
+    print("""
+╔══════════════════════════════════════════════════════════╗
+║                                                          ║
+║  💖  FILE VAULT - WhatsApp-Style Secret Vault  💖     ║
+║     AES-256 Encryption | Password 1234                   ║
+║     GitHub Actions APK Generator                         ║
+║                                                          ║
+╚══════════════════════════════════════════════════════════╝
+    """)
+    build_all()
