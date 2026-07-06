@@ -3,10 +3,10 @@
 scraper.py - Project Generator
 ينشئ هيكل مشروع Android كامل داخل مجلد gtheb
 لتطبيق SecureVault بواجهة محادثة تشبه واتساب
+مع GitHub Actions بسيط لبناء APK فقط
 """
 
 import os
-import json
 
 def create_project_structure():
     """إنشاء هيكل المشروع داخل مجلد gtheb"""
@@ -99,7 +99,7 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -231,7 +231,7 @@ public class CryptoManager {
     private static final String AES_GCM = "AES/GCM/NoPadding";
     private static final int GCM_TAG_LENGTH = 128;
     private static final int GCM_IV_LENGTH = 12;
-    private static final String SECRET_PIN = "1234"; // PIN الافتراضي
+    private static final String SECRET_PIN = "1234";
     
     private SecretKeySpec secretKey;
 
@@ -259,7 +259,6 @@ public class CryptoManager {
         
         byte[] encrypted = cipher.doFinal(data);
         
-        // دمج IV مع البيانات المشفرة
         byte[] combined = new byte[iv.length + encrypted.length];
         System.arraycopy(iv, 0, combined, 0, iv.length);
         System.arraycopy(encrypted, 0, combined, iv.length, encrypted.length);
@@ -409,7 +408,6 @@ public class VaultFile {
         this.isVideo = isVideo;
     }
 
-    // Getters and Setters
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
     public String getOriginalName() { return originalName; }
@@ -452,7 +450,6 @@ public class FileUtils {
         if (!vault.exists()) {
             vault.mkdirs();
         }
-        // إنشاء ملف .nomedia لإخفاء المحتوى من المعرض
         File nomedia = new File(vault, ".nomedia");
         if (!nomedia.exists()) {
             try {
@@ -470,16 +467,13 @@ public class FileUtils {
         
         CryptoManager crypto = MainApplication.getInstance().getCryptoManager();
         
-        // قراءة البيانات الأصلية
         byte[] data = new byte[(int) originalFile.length()];
         FileInputStream fis = new FileInputStream(originalFile);
         fis.read(data);
         fis.close();
         
-        // تشفير البيانات
         byte[] encrypted = crypto.encrypt(data);
         
-        // حفظ في مجلد المخزن
         String encryptedName = "ENC_" + System.currentTimeMillis() + "_" + originalFile.getName();
         File vaultFile = new File(getVaultDir(), encryptedName);
         FileOutputStream fos = new FileOutputStream(vaultFile);
@@ -617,8 +611,7 @@ public class ChatActivity extends AppCompatActivity {
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
         
-        // رسالة ترحيب
-        addMessage("bot", "مرحباً! هذه خزنتك الآمنة 📱\\nيمكنك إرسال الصور والفيديوهات لتشفيرها وحمايتها\\nالرمز: 1234");
+        addMessage("bot", "مرحباً! هذه خزنتك الآمنة \\uD83D\\uDCF1\\nيمكنك إرسال الصور والفيديوهات لتشفيرها وحمايتها\\nالرمز: 1234");
         
         sendButton.setOnClickListener(v -> sendMessage());
         
@@ -639,11 +632,10 @@ public class ChatActivity extends AppCompatActivity {
             addMessage("user", text);
             messageInput.setText("");
             
-            // رد بسيط
             if (text.contains("مرحبا") || text.contains("هلا")) {
-                addMessage("bot", "أهلاً بك! 📱 أرسل لي الصور والفيديوهات لحمايتها");
+                addMessage("bot", "أهلاً بك! \\uD83D\\uDCF1 أرسل لي الصور والفيديوهات لحمايتها");
             } else if (text.contains("شكرا")) {
-                addMessage("bot", "عفواً! 😊 ملفاتك بأمان");
+                addMessage("bot", "عفواً! \\uD83D\\uDE0A ملفاتك بأمان");
             }
         }
     }
@@ -670,7 +662,6 @@ public class ChatActivity extends AppCompatActivity {
             String fileName = getFileName(uri);
             String mimeType = getContentResolver().getType(uri);
             
-            // نسخ الملف للتخزين المؤقت
             File tempFile = new File(getCacheDir(), fileName);
             InputStream is = getContentResolver().openInputStream(uri);
             FileOutputStream fos = new FileOutputStream(tempFile);
@@ -682,7 +673,6 @@ public class ChatActivity extends AppCompatActivity {
             fos.close();
             is.close();
             
-            // تشفير ونقل الملف
             String vaultPath = FileUtils.encryptAndMoveFile(tempFile.getAbsolutePath());
             
             if (vaultPath != null) {
@@ -699,9 +689,9 @@ public class ChatActivity extends AppCompatActivity {
                 tempFile.delete();
                 
                 boolean isVideo = FileUtils.isVideo(fileName);
-                String icon = isVideo ? "🎬" : "🖼️";
+                String icon = isVideo ? "\\uD83C\\uDFAC" : "\\uD83D\\uDDBC";
                 addMessage("user", icon + " " + fileName + "\\nتم التشفير والحماية ✅");
-                addMessage("bot", "تم حماية الملف بنجاح! 🔒\\nلا يمكن لأحد رؤيته الآن");
+                addMessage("bot", "تم حماية الملف بنجاح! \\uD83D\\uDD12\\nلا يمكن لأحد رؤيته الآن");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -723,16 +713,16 @@ public class ChatActivity extends AppCompatActivity {
     private void loadVaultFiles() {
         List<VaultFile> files = dbHelper.getAllFiles();
         messages.clear();
-        addMessage("bot", "📂 الملفات المحمية في خزنتك:");
+        addMessage("bot", "\\uD83D\\uDCC2 الملفات المحمية في خزنتك:");
         
         for (VaultFile file : files) {
-            String icon = file.isVideo() ? "🎬" : "🖼️";
+            String icon = file.isVideo() ? "\\uD83C\\uDFAC" : "\\uD83D\\uDDBC";
             addMessage("user", icon + " " + file.getOriginalName() + 
                        "\\nالحجم: " + formatSize(file.getSize()));
         }
         
         if (files.isEmpty()) {
-            addMessage("bot", "لا توجد ملفات محمية بعد 📭\\nأرسل ملفاً للبدء");
+            addMessage("bot", "لا توجد ملفات محمية بعد \\uD83D\\uDced\\nأرسل ملفاً للبدء");
         }
     }
 
@@ -931,7 +921,6 @@ public class MediaViewerActivity extends AppCompatActivity {
     android:layout_height="match_parent"
     android:background="#E5DDD5">
 
-    <!-- شريط العنوان -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -953,7 +942,6 @@ public class MediaViewerActivity extends AppCompatActivity {
         </androidx.appcompat.widget.Toolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- قائمة المحادثة -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/chat_recycler"
         android:layout_width="match_parent"
@@ -963,7 +951,6 @@ public class MediaViewerActivity extends AppCompatActivity {
         android:padding="8dp"
         android:clipToPadding="false" />
 
-    <!-- شريط الإدخال السفلي -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -1001,7 +988,6 @@ public class MediaViewerActivity extends AppCompatActivity {
             android:contentDescription="إرسال" />
     </LinearLayout>
 
-    <!-- زر المعرض العائم -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_gallery"
         android:layout_width="wrap_content"
@@ -1056,7 +1042,6 @@ public class MediaViewerActivity extends AppCompatActivity {
     
     # ========== DRAWABLE FILES ==========
     
-    # bubble_bot.xml
     bubble_bot = """<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
@@ -1070,7 +1055,6 @@ public class MediaViewerActivity extends AppCompatActivity {
     with open(f"{res}/drawable/bubble_bot.xml", "w") as f:
         f.write(bubble_bot)
     
-    # bubble_user.xml
     bubble_user = """<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
@@ -1084,7 +1068,6 @@ public class MediaViewerActivity extends AppCompatActivity {
     with open(f"{res}/drawable/bubble_user.xml", "w") as f:
         f.write(bubble_user)
     
-    # edittext_bg.xml
     edit_bg = """<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
@@ -1096,7 +1079,6 @@ public class MediaViewerActivity extends AppCompatActivity {
     with open(f"{res}/drawable/edittext_bg.xml", "w") as f:
         f.write(edit_bg)
     
-    # ic_launcher.xml
     ic_launcher = """<?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background"/>
@@ -1164,10 +1146,9 @@ public class MediaViewerActivity extends AppCompatActivity {
     
     print("[+] Resource files created")
     
-    # ========== GITHUB ACTIONS ==========
+    # ========== GITHUB ACTIONS - بسيط: بس build-apk.yml ==========
     
-    # main.yml
-    main_yml = """name: Build APK
+    build_apk_yml = """name: Build APK
 
 on:
   push:
@@ -1191,16 +1172,6 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         
-    - name: Cache Gradle
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-          
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
@@ -1211,90 +1182,12 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: SecureVault-Debug
-        path: app/build/outputs/apk/debug/app-debug.apk
-        
-    - name: Build Release APK (if keystore available)
-      if: false
-      run: ./gradlew assembleRelease
-      env:
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}"""
+        path: app/build/outputs/apk/debug/app-debug.apk"""
     
-    with open(f"{base_path}/.github/workflows/main.yml", "w") as f:
-        f.write(main_yml)
+    with open(f"{base_path}/.github/workflows/build-apk.yml", "w") as f:
+        f.write(build_apk_yml)
     
-    # build.yml
-    build_yml = """name: Build and Release APK
-
-on:
-  push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version name'
-        required: true
-        default: '1.0'
-
-jobs:
-  build:
-    name: Build Release APK
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        
-    - name: Cache Gradle
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-          
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
-      
-    - name: Upload Debug APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: SecureVault-Debug-${{ github.sha }}
-        path: app/build/outputs/apk/debug/app-debug.apk
-        
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: app/build/outputs/apk/debug/app-debug.apk
-        name: SecureVault ${{ github.ref_name }}
-        body: |
-          ## SecureVault APK
-          
-          تطبيق الخزنة الآمنة لتشفير وحماية الصور والفيديوهات
-          
-          ### المميزات:
-          - واجهة محادثة سهلة الاستخدام
-          - تشفير AES-256
-          - إخفاء الملفات من المعرض
-          - حماية بكلمة مرور
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}"""
-    
-    with open(f"{base_path}/.github/workflows/build.yml", "w") as f:
-        f.write(build_yml)
-    
-    print("[+] GitHub Actions workflows created")
+    print("[+] GitHub Actions: build-apk.yml created")
     
     # ========== GRADLE WRAPPER ==========
     
@@ -1309,14 +1202,7 @@ zipStorePath=wrapper/dists"""
     with open(f"{base_path}/gradle/wrapper/gradle-wrapper.properties", "w") as f:
         f.write(gradle_wrapper_props)
     
-    # gradlew script (shell)
     gradlew = """#!/bin/sh
-#
-# Gradle start up script
-#
-# This is a generated file.
-
-# Attempt to set APP_HOME
 PRG="$0"
 while [ -h "$PRG" ] ; do
     ls=$(ls -ld "$PRG")
@@ -1331,41 +1217,9 @@ SAVED="$(pwd)"
 cd "$(dirname \"$PRG\")/" >/dev/null
 APP_HOME="$(pwd -P)"
 cd "$SAVED" >/dev/null
-
-APP_NAME="Gradle"
-APP_BASE_NAME=$(basename "$0")
-
-DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
-
-MAX_FD="maximum"
-
-warn () {
-    echo "$*"
-} >&2
-
-die () {
-    echo
-    echo "$*"
-    echo
-    exit 1
-} >&2
-
-OS_NAME=$(uname)
-case "$OS_NAME" in
-    Darwin* ) darwin=true;;
-    MINGW* ) msys=true;;
-    CYGWIN* ) cygwin=true;;
-esac
-
 CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
-
-if [ -n "$JAVA_HOME" ] ; then
-    JAVACMD="$JAVA_HOME/bin/java"
-else
-    JAVACMD="java"
-fi
-
-exec "$JAVACMD" $DEFAULT_JVM_OPTS -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+JAVACMD="java"
+exec "$JAVACMD" -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
 """
     
     with open(f"{base_path}/gradlew", "w") as f:
@@ -1373,67 +1227,24 @@ exec "$JAVACMD" $DEFAULT_JVM_OPTS -classpath "$CLASSPATH" org.gradle.wrapper.Gra
     
     os.chmod(f"{base_path}/gradlew", 0o755)
     
-    # gradlew.bat
     gradlew_bat = """@if "%DEBUG%"=="" @echo off
-@rem Gradle startup script for Windows
-@rem This is a generated file.
-
-@rem Set local scope for the variables with windows NT shell
-if "%OS%"=="Windows_NT" setlocal
-
 set DIRNAME=%~dp0
-if "%DIRNAME%"=="" set DIRNAME=.
-@rem This is normally unused
-set APP_BASE_NAME=%~n0
 set APP_HOME=%DIRNAME%
-
-@rem Resolve any "." and ".." in APP_HOME to make it shorter.
-for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
-
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
-
-@rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
-
 set JAVA_EXE=java.exe
 %JAVA_EXE% -version >NUL 2>&1
 if %ERRORLEVEL% equ 0 goto execute
-
-echo.
-echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
-echo.
-echo Please set the JAVA_HOME variable in your environment to match the
-echo location of your Java installation.
-
+echo ERROR: JAVA_HOME is not set
 goto fail
-
 :findJavaFromJavaHome
 set JAVA_HOME=%JAVA_HOME:"=%
 set JAVA_EXE=%JAVA_HOME%/bin/java.exe
-
 if exist "%JAVA_EXE%" goto execute
-
-echo.
-echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
-echo.
-echo Please set the JAVA_HOME variable in your environment to match the
-echo location of your Java installation.
-
-goto fail
-
 :execute
-@rem Setup the command line
-
 set CLASSPATH=%APP_HOME%\\gradle\\wrapper\\gradle-wrapper.jar
-
-@rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
-
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
 :end
-@rem End local scope for the variables with windows NT shell
-if %OS%==Windows_NT endlocal
-
-:omega
 """
     
     with open(f"{base_path}/gradlew.bat", "w") as f:
@@ -1442,37 +1253,22 @@ if %OS%==Windows_NT endlocal
     print("[+] Gradle wrapper created")
     
     # ========== SUMMARY ==========
-    print("\\n" + "="*60)
+    print("\n" + "="*60)
     print("[✓] تم إنشاء المشروع بنجاح في مجلد gtheb/")
     print("="*60)
-    print("\\nبنية المشروع:")
+    print("\nبنية المشروع:")
     print("  📁 gtheb/")
-    print("  ├── 📁 app/")
-    print("  │   ├── 📁 src/main/java/com/securevault/app/")
-    print("  │   │   ├── MainApplication.java")
-    print("  │   │   ├── 📁 crypto/CryptoManager.java")
-    print("  │   │   ├── 📁 database/DatabaseHelper.java")
-    print("  │   │   ├── 📁 models/VaultFile.java")
-    print("  │   │   ├── 📁 utils/FileUtils.java")
-    print("  │   │   └── 📁 ui/")
-    print("  │   │       ├── LockScreenActivity.java")
-    print("  │   │       ├── ChatActivity.java")
-    print("  │   │       ├── ChatAdapter.java")
-    print("  │   │       └── MediaViewerActivity.java")
-    print("  │   └── 📁 res/layout/ (واجهات XML)")
+    print("  ├── 📁 app/ (تطبيق Android)")
     print("  ├── 📁 .github/workflows/")
-    print("  │   ├── main.yml")
-    print("  │   └── build.yml")
+    print("  │   └── build-apk.yml  ← يصنع APK فقط ✅")
     print("  ├── build.gradle")
-    print("  ├── settings.gradle")
     print("  └── gradlew")
-    print("\\nللاستخدام:")
-    print("  1. افتح Android Studio")
-    print("  2. اختر 'Open Project'")
-    print("  3. حدد مجلد gtheb/")
-    print("  4. انتظر تثبيت Gradle")
-    print("  5. شغل على هاتفك أو محاكي")
-    print("\\nالرمز السري: 1234")
+    print("\nماذا يحدث عند رفع المشروع لـ GitHub؟")
+    print("  ✅ يشتغل GitHub Actions تلقائياً")
+    print("  ✅ يبني الـ APK")
+    print("  ✅ يرفعه كـ Artifact جاهز للتحميل")
+    print("  ✅ بسيط - مباشر - بدون تعقيد")
+    print("\nالرمز السري: 1234")
     print("="*60)
 
 if __name__ == "__main__":
